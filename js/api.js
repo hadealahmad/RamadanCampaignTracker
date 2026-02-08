@@ -1,0 +1,194 @@
+/**
+ * GitHub API Module
+ * Handles all API interactions with GitHub
+ */
+
+import { config } from './config.js';
+
+const GITHUB_API_BASE = 'https://api.github.com';
+
+/**
+ * Get headers for GitHub API requests
+ * If a token is configured, it will be included for authenticated requests
+ * @returns {Object} Headers object
+ */
+function getHeaders() {
+    const headers = {
+        'Accept': 'application/vnd.github.v3+json'
+    };
+
+    if (config.GITHUB_TOKEN && config.GITHUB_TOKEN.trim() !== '') {
+        headers['Authorization'] = `Bearer ${config.GITHUB_TOKEN}`;
+    }
+
+    return headers;
+}
+
+/**
+ * Load configuration from projects.json
+ * @returns {Promise<Object>} Configuration object
+ */
+export async function loadConfig() {
+    try {
+        const response = await fetch('./projects.json');
+        if (!response.ok) {
+            throw new Error(`Failed to load config: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error loading config:', error);
+        throw error;
+    }
+}
+
+/**
+ * Fetch issues for a single repository
+ * @param {string} owner - Repository owner
+ * @param {string} repo - Repository name
+ * @param {number} perPage - Number of issues per page
+ * @returns {Promise<Array>} Array of issues
+ */
+export async function fetchProjectIssues(owner, repo, perPage = 100) {
+    try {
+        const url = `${GITHUB_API_BASE}/repos/${owner}/${repo}/issues?state=all&per_page=${perPage}`;
+        const response = await fetch(url, { headers: getHeaders() });
+
+        if (!response.ok) {
+            if (response.status === 403 || response.status === 429) {
+                console.warn(`Rate limited when fetching ${owner}/${repo}. Add a GitHub token in js/config.js to increase limits.`);
+            } else {
+                console.warn(`Failed to fetch issues for ${owner}/${repo}: ${response.status}`);
+            }
+            return [];
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error(`Error fetching issues for ${owner}/${repo}:`, error);
+        return [];
+    }
+}
+
+/**
+ * Fetch comments for a specific issue
+ * @param {string} owner - Repository owner
+ * @param {string} repo - Repository name
+ * @param {number} issueNumber - Issue number
+ * @returns {Promise<Array>} Array of comments
+ */
+export async function fetchIssueComments(owner, repo, issueNumber) {
+    try {
+        const url = `${GITHUB_API_BASE}/repos/${owner}/${repo}/issues/${issueNumber}/comments`;
+        const response = await fetch(url, { headers: getHeaders() });
+
+        if (!response.ok) {
+            if (response.status === 403 || response.status === 429) {
+                console.warn(`Rate limited when fetching comments. Add a GitHub token in js/config.js to increase limits.`);
+            } else {
+                console.warn(`Failed to fetch comments for issue #${issueNumber}: ${response.status}`);
+            }
+            return [];
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error(`Error fetching comments for issue #${issueNumber}:`, error);
+        return [];
+    }
+}
+
+/**
+ * Parse points from issue labels
+ * Supports formats: "100", "100 points", "100pts", "pts-100", "points-100"
+ * @param {Array} labels - Array of label objects
+ * @returns {number} Points value
+ */
+export function parsePointsFromLabels(labels) {
+    if (!labels || !labels.length) return 0;
+
+    const pointLabel = labels.find(l => {
+        // Match: "100", "100 points", "100pts"
+        // Or: "pts-100", "points-100"
+        return /^(\d+)(\s*(points?|poins|pts))?$/i.test(l.name) ||
+            /^(pts|points?)-(\d+)$/i.test(l.name);
+    });
+
+    if (!pointLabel) return 0;
+
+    // Try parsing "pts-100" format first
+    const prefixMatch = pointLabel.name.match(/^(?:pts|points?)-(\d+)$/i);
+    if (prefixMatch) {
+        return parseInt(prefixMatch[1], 10);
+    }
+
+    // Parse standard "100", "100 points" format
+    const numberMatch = pointLabel.name.match(/^(\d+)/);
+    if (numberMatch) {
+        return parseInt(numberMatch[1], 10);
+    }
+
+    return 0;
+}
+
+/**
+ * Process raw issues from GitHub API
+ * @param {Array} issues - Raw issues from API
+ * @param {Date} thresholdDate - Threshold date for closed issues
+ * @returns {Array} Processed issues
+ */
+export function processIssues(issues, thresholdDate) {
+    return issues
+        .filter(issue => {
+            // Exclude pull requests
+            if (issue.pull_request) return false;
+
+            // For closed issues, only include those closed after threshold
+            if (issue.state === 'closed') {
+                const closedDate = new Date(issue.closed_at);
+                return closedDate >= thresholdDate;
+            }
+
+            return true;
+        })
+        .map(issue => ({
+            ...issue,
+            points: parsePointsFromLabels(issue.labels)
+        }));
+}
+
+/**
+ * Fetch all projects data
+ * @param {Array} projects - Array of project configurations
+ * @param {Object} settings - Settings object with thresholdDate and perPage
+ * @returns {Promise<Array>} Array of projects with their issues
+ */
+export async function fetchAllProjectsData(projects, settings) {
+    const thresholdDate = new Date(settings.thresholdDate);
+
+    const promises = projects.map(async (project) => {
+        const issues = await fetchProjectIssues(project.owner, project.repo, settings.perPage);
+        const processedIssues = processIssues(issues, thresholdDate);
+
+        // Calculate project stats
+        const openCount = processedIssues.filter(i => i.state === 'open').length;
+        const closedCount = processedIssues.filter(i => i.state === 'closed').length;
+        const assignedCount = processedIssues.filter(i => i.assignee).length;
+        const totalPoints = processedIssues.reduce((sum, i) => sum + i.points, 0);
+        const commentsCount = processedIssues.reduce((sum, i) => sum + i.comments, 0);
+
+        return {
+            ...project,
+            issues: processedIssues,
+            stats: {
+                open: openCount,
+                closed: closedCount,
+                assigned: assignedCount,
+                total: processedIssues.length,
+                points: totalPoints,
+                comments: commentsCount
+            }
+        };
+    });
+
+    return Promise.all(promises);
+}

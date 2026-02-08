@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مبادرة رمضان الأثر | إتقان</title>
+    <meta name="description" content="متابعة حية للمهام والمساهمات في مشاريع مبادرة رمضان الأثر">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { 'ibm': ['IBM Plex Sans Arabic', 'sans-serif'] },
+                    colors: {
+                        border: 'hsl(var(--border))',
+                        ring: 'hsl(var(--ring))',
+                        background: 'hsl(var(--background))',
+                        foreground: 'hsl(var(--foreground))',
+                        primary: { DEFAULT: 'hsl(var(--primary))', foreground: 'hsl(var(--primary-foreground))' },
+                        secondary: { DEFAULT: 'hsl(var(--secondary))', foreground: 'hsl(var(--secondary-foreground))' },
+                        muted: { DEFAULT: 'hsl(var(--muted))', foreground: 'hsl(var(--muted-foreground))' },
+                        accent: { DEFAULT: 'hsl(var(--accent))', foreground: 'hsl(var(--accent-foreground))' },
+                        card: { DEFAULT: 'hsl(var(--card))', foreground: 'hsl(var(--card-foreground))' },
+                    },
+                    borderRadius: { lg: 'var(--radius)', md: 'calc(var(--radius) - 2px)', sm: 'calc(var(--radius) - 4px)' }
+                }
+            }
+        }
+    </script>
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body class="font-ibm min-h-screen dark">
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-brand">
+                <i data-lucide="trophy" class="w-5 h-5 text-primary"></i>
+                <span class="navbar-title">مبادرة رمضان الأثر</span>
+            </div>
+
+            <div class="navbar-stats">
+                <div class="navbar-stat">
+                    <span class="navbar-stat-value" id="stat-open">0</span>
+                    <span class="navbar-stat-label">مفتوحة</span>
+                </div>
+                <div class="navbar-stat">
+                    <span class="navbar-stat-value" id="stat-comments">0</span>
+                    <span class="navbar-stat-label">بتعليقات</span>
+                </div>
+                <div class="navbar-stat">
+                    <span class="navbar-stat-value" id="stat-assigned">0</span>
+                    <span class="navbar-stat-label">مسندة</span>
+                </div>
+                <div class="navbar-stat">
+                    <span class="navbar-stat-value" id="stat-closed">0</span>
+                    <span class="navbar-stat-label">مغلقة</span>
+                </div>
+                <div class="navbar-stat navbar-stat-highlight">
+                    <span class="navbar-stat-value" id="stat-points">0/0</span>
+                    <span class="navbar-stat-label">نقاط</span>
+                </div>
+            </div>
+
+            <div class="navbar-actions">
+                <button id="btn-refresh" class="btn btn-ghost btn-icon" title="تحديث">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                </button>
+                <button id="btn-settings" class="btn btn-ghost btn-icon" title="الإعدادات">
+                    <i data-lucide="settings" class="w-4 h-4"></i>
+                </button>
+                <button id="btn-theme" class="btn btn-ghost btn-icon" title="تبديل الوضع">
+                    <i data-lucide="sun" class="w-4 h-4 hidden dark:block"></i>
+                    <i data-lucide="moon" class="w-4 h-4 block dark:hidden"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 py-6">
+        <!-- Tabs -->
+        <div class="tabs-container mb-4">
+            <div class="tabs">
+                <button class="tab active" data-tab="repos">
+                    <i data-lucide="folder-git-2" class="w-4 h-4"></i>
+                    المشاريع
+                </button>
+                <button class="tab" data-tab="contributors">
+                    <i data-lucide="users" class="w-4 h-4"></i>
+                    المساهمون
+                </button>
+            </div>
+        </div>
+
+        <!-- Filter Bar (for repos tab) -->
+        <div class="filter-bar" id="filter-bar">
+            <div class="filter-section">
+                <!-- Status Filter -->
+                <div class="filter-group">
+                    <span class="filter-label">الحالة:</span>
+                    <div class="filter-pills">
+                        <button class="filter-pill active" data-filter="status" data-value="open">مفتوحة</button>
+                        <button class="filter-pill" data-filter="status" data-value="closed">مغلقة</button>
+                        <button class="filter-pill" data-filter="status" data-value="all">الكل</button>
+                    </div>
+                </div>
+
+                <!-- Assignment Filter -->
+                <div class="filter-group">
+                    <span class="filter-label">الإسناد:</span>
+                    <div class="filter-pills">
+                        <button class="filter-pill active" data-filter="assignment" data-value="all">الكل</button>
+                        <button class="filter-pill" data-filter="assignment" data-value="assigned">مسندة</button>
+                        <button class="filter-pill" data-filter="assignment" data-value="unassigned">غير مسندة</button>
+                    </div>
+                </div>
+
+                <!-- Comments Filter -->
+                <div class="filter-group">
+                    <span class="filter-label">التعليقات:</span>
+                    <div class="filter-pills">
+                        <button class="filter-pill active" data-filter="comments" data-value="all">الكل</button>
+                        <button class="filter-pill" data-filter="comments" data-value="has-comments">بها
+                            تعليقات</button>
+                        <button class="filter-pill" data-filter="comments" data-value="no-comments">بدون</button>
+                    </div>
+                </div>
+
+                <!-- Points Toggle -->
+                <div class="filter-group">
+                    <label class="toggle-container">
+                        <span class="toggle-label">ذات نقاط فقط</span>
+                        <div class="toggle" id="toggle-points"></div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Sort -->
+            <div class="filter-group">
+                <span class="filter-label">الترتيب:</span>
+                <select class="select" id="sort-select">
+                    <option value="order">الافتراضي</option>
+                    <option value="points">النقاط</option>
+                    <option value="issues">عدد المهام</option>
+                    <option value="closed">المغلقة</option>
+                    <option value="name">الاسم</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Contributors Filter (for contributors tab) -->
+        <div class="filter-bar hidden" id="contributors-filter-bar">
+            <div class="filter-section">
+                <div class="filter-group">
+                    <span class="filter-label">الترتيب حسب:</span>
+                    <div class="filter-pills">
+                        <button class="filter-pill active" data-filter="contrib-sort" data-value="points">النقاط
+                            المحصلة</button>
+                        <button class="filter-pill" data-filter="contrib-sort" data-value="closed">المهام
+                            المغلقة</button>
+                        <button class="filter-pill" data-filter="contrib-sort" data-value="assigned">المهام
+                            المسندة</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading-state" class="flex flex-col items-center justify-center py-20">
+            <div class="spinner"></div>
+            <p class="mt-4 text-muted-foreground">جاري تحميل البيانات...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden flex flex-col items-center justify-center py-20 text-center">
+            <i data-lucide="inbox" class="w-16 h-16 text-muted-foreground mb-4"></i>
+            <h3 class="text-lg font-semibold text-foreground">لا توجد مهام</h3>
+            <p class="text-muted-foreground">لا توجد مهام مطابقة لخيارات التصفية الحالية.</p>
+        </div>
+
+        <!-- Repos Tab Content -->
+        <div id="repos-content" class="tab-content">
+            <div id="leaderboard" class="space-y-3"></div>
+        </div>
+
+        <!-- Contributors Tab Content -->
+        <div id="contributors-content" class="tab-content hidden">
+            <div id="contributors-leaderboard" class="space-y-3"></div>
+        </div>
+    </main>
+
+    <!-- Issue Modal -->
+    <div id="modal-backdrop" class="modal-backdrop"></div>
+    <div id="issue-modal" class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title" id="modal-title">عنوان المهمة</h2>
+            <button class="modal-close" id="modal-close">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <div class="modal-body" id="modal-body">
+            <!-- Modal content will be injected here -->
+        </div>
+        <div class="modal-footer">
+            <a id="modal-github-link" href="#" target="_blank" rel="noopener" class="btn btn-primary">
+                <i data-lucide="external-link" class="w-4 h-4"></i>
+                فتح في GitHub
+            </a>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-backdrop" class="modal-backdrop"></div>
+    <div id="settings-modal" class="modal" style="max-width: 400px;">
+        <div class="modal-header">
+            <h2 class="modal-title flex items-center gap-2">
+                <i data-lucide="settings" class="w-5 h-5"></i>
+                الإعدادات
+            </h2>
+            <button class="modal-close" id="settings-close">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2" for="github-token-input">
+                        GitHub Token
+                        <span class="text-muted-foreground font-normal">(اختياري)</span>
+                    </label>
+                    <input type="password" id="github-token-input"
+                        class="w-full px-3 py-2 rounded-md border border-border bg-background text-foreground text-sm"
+                        placeholder="ghp_xxxxxxxxxxxx" dir="ltr">
+                    <p class="text-xs text-muted-foreground mt-2">
+                        أضف GitHub Token لتجاوز حد الطلبات (60 → 5000 طلب/ساعة).
+                        <a href="https://github.com/settings/tokens" target="_blank"
+                            class="text-primary hover:underline">إنشاء Token</a>
+                    </p>
+                </div>
+
+                <div id="token-status" class="text-sm"></div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="btn-clear-token" class="btn btn-ghost text-sm">
+                مسح Token
+            </button>
+            <button id="btn-save-token" class="btn btn-primary text-sm">
+                حفظ
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-border py-6 mt-12">
+        <div class="max-w-6xl mx-auto px-4 text-center text-muted-foreground text-sm">
+            مشروع مفتوح المصدر من <a href="https://github.com/Itqan-community" target="_blank"
+                class="text-primary hover:underline">مجتمع إتقان</a> 💚
+        </div>
+    </footer>
+
+    <!-- App Scripts -->
+    <script type="module" src="js/app.js"></script>
+    <script>
+        // Initialize Lucide icons
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+    </script>
+</body>
+
+</html>
