@@ -116,6 +116,15 @@
       "icon": "⏰",
       "category": "personal",
       "order": 12
+    },
+    {
+      "id": "munajjam",
+      "owner": "Itqan-community",
+      "repo": "Munajjam",
+      "name": "منجّم",
+      "icon": "🎯",
+      "category": "tools",
+      "order": 13
     }
   ],
   "settings": {
