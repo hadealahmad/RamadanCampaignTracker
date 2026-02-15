@@ -5,6 +5,7 @@
       "owner": "Itqan-community",
       "repo": "quran-apps-directory",
       "name": "دليل التطبيقات القرآنية",
+      "publisher": "أبو بكر عبد الرحمن",
       "icon": "📚",
       "category": "community",
       "order": 1
@@ -14,6 +15,7 @@
       "owner": "Itqan-community",
       "repo": "cms-backend",
       "name": "نظام إدارة المحتوى القرآني - Backend",
+      "publisher": "عبد الوهاب الهندي",
       "icon": "⚙️",
       "category": "platform",
       "order": 2
@@ -23,6 +25,7 @@
       "owner": "Itqan-community",
       "repo": "cms-frontend",
       "name": "نظام إدارة المحتوى القرآني - Frontend",
+      "publisher": "عبد الوهاب الهندي",
       "icon": "🎨",
       "category": "platform",
       "order": 2
@@ -32,6 +35,7 @@
       "owner": "ibo2001",
       "repo": "MushafImad",
       "name": "حزمة مصحف عماد - سويفت",
+      "publisher": "إبراهيم قريقع",
       "icon": "📱",
       "category": "mushaf",
       "order": 3
@@ -41,15 +45,17 @@
       "owner": "adelpro",
       "repo": "mushaf-imad-rn",
       "name": "حزمة مصحف عماد - React Native",
+      "publisher": "عادل بن يحي",
       "icon": "📱",
       "category": "mushaf",
       "order": 4
     },
     {
-      "id": "ratq",
-      "owner": "Itqan-community",
-      "repo": "RATQ",
-      "name": "حزمة مصحف عماد - كوتلن",
+      "id": "mushaf-imad-android",
+      "owner": "YahiaRagae",
+      "repo": "mushaf-imad-android",
+      "name": "حزمة مصحف عماد-كوتلن",
+      "publisher": "يحيى رجائي",
       "icon": "📱",
       "category": "mushaf",
       "order": 5
@@ -59,6 +65,7 @@
       "owner": "adelpro",
       "repo": "quran-search-engine",
       "name": "محرك البحث القرآني",
+      "publisher": "عادل بن يحي",
       "icon": "🔍",
       "category": "tools",
       "order": 6
@@ -68,6 +75,7 @@
       "owner": "adelpro",
       "repo": "open-mushaf-native",
       "name": "Open Mushaf Native",
+      "publisher": "عادل بن يحي",
       "icon": "📖",
       "category": "mushaf",
       "order": 7
@@ -77,6 +85,7 @@
       "owner": "adelpro",
       "repo": "open-tarteel-tv",
       "name": "Open Tarteel TV",
+      "publisher": "عادل بن يحي",
       "icon": "📺",
       "category": "recitation",
       "order": 8
@@ -86,6 +95,7 @@
       "owner": "adelpro",
       "repo": "open-tarteel",
       "name": "Open Tarteel",
+      "publisher": "عادل بن يحي",
       "icon": "🎙️",
       "category": "recitation",
       "order": 9
@@ -95,6 +105,7 @@
       "owner": "AmmarCodes",
       "repo": "obsidian-quran-helper-plugin",
       "name": "إضافة المساعد القرآني لأوبسيديان",
+      "publisher": "عمار العقاد",
       "icon": "💎",
       "category": "tools",
       "order": 10
@@ -104,6 +115,7 @@
       "owner": "hadealahmad",
       "repo": "MonthlyQuran",
       "name": "Monthly Quran القرآن الشهري",
+      "publisher": "هادي الأحمد",
       "icon": "📅",
       "category": "personal",
       "order": 11
@@ -113,6 +125,7 @@
       "owner": "hadealahmad",
       "repo": "WirdReminder",
       "name": "مذكر الورد",
+      "publisher": "هادي الأحمد",
       "icon": "⏰",
       "category": "personal",
       "order": 12
@@ -121,10 +134,21 @@
       "id": "munajjam",
       "owner": "Itqan-community",
       "repo": "Munajjam",
-      "name": "منجّم",
+      "name": "منجم",
+      "publisher": "إتقان",
       "icon": "🎯",
       "category": "tools",
       "order": 13
+    },
+    {
+      "id": "ratq",
+      "owner": "Itqan-community",
+      "repo": "RATQ",
+      "name": "رتق",
+      "publisher": "إتقان",
+      "icon": "🧵",
+      "category": "mushaf",
+      "order": 14
     }
   ],
   "settings": {
