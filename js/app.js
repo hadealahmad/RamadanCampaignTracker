@@ -9,7 +9,8 @@ import {
     sortProjects,
     calculateGlobalStats,
     getVisibleProjects,
-    buildContributorLeaderboard
+    buildContributorLeaderboard,
+    calculateDailyCounts
 } from './filters.js';
 import {
     initUI,
@@ -17,6 +18,8 @@ import {
     renderLeaderboard,
     renderContributorsLeaderboard,
     renderFiltersBar,
+    renderHeatmaps,
+    showDayActivity,
     showLoading,
     hideLoading,
     showEmpty
@@ -88,9 +91,16 @@ async function fetchData() {
 }
 
 function render() {
-    // Calculate global stats
     const stats = calculateGlobalStats(state.projects, state.config.settings.thresholdDate);
     renderStats(stats);
+
+    // Render heatmaps
+    const heatmapData = calculateDailyCounts(
+        state.projects,
+        '2026-01-30', // Forced range as requested
+        '2026-03-30'
+    );
+    renderHeatmaps(heatmapData, handleDayClick);
 
     if (state.activeTab === 'repos') {
         // Render repos leaderboard
@@ -133,6 +143,57 @@ function handleProjectToggle(projectId) {
 
 function handleIssueClick(issue, owner, repo) {
     openModal(issue, owner, repo);
+}
+
+function handleDayClick(date, type) {
+    const items = [];
+    state.projects.forEach(project => {
+        // Search issues for assigned/closed
+        if (type === 'assigned' || type === 'closed') {
+            project.issues.forEach(issue => {
+                if (type === 'assigned') {
+                    if (issue.created_at) {
+                        const issueDate = new Date(issue.created_at).toISOString().split('T')[0];
+                        if (issueDate === date) {
+                            items.push({ issue, owner: project.owner, repo: project.repo });
+                        }
+                    }
+                } else if (type === 'closed') {
+                    if (issue.state === 'closed' && issue.closed_at) {
+                        const issueDate = new Date(issue.closed_at).toISOString().split('T')[0];
+                        if (issueDate === date) {
+                            items.push({ issue, owner: project.owner, repo: project.repo });
+                        }
+                    }
+                }
+            });
+        }
+
+        // Search PRs for merged/open
+        if (type === 'merged_prs' || type === 'open_prs') {
+            if (project.prs) {
+                project.prs.forEach(pr => {
+                    if (type === 'merged_prs') {
+                        if (pr.state === 'closed' && pr.closed_at) {
+                            const prDate = new Date(pr.closed_at).toISOString().split('T')[0];
+                            if (prDate === date) {
+                                items.push({ issue: pr, owner: project.owner, repo: project.repo });
+                            }
+                        }
+                    } else if (type === 'open_prs') {
+                        if (pr.state === 'open') {
+                            const prDate = new Date(pr.created_at).toISOString().split('T')[0];
+                            if (prDate === date) {
+                                items.push({ issue: pr, owner: project.owner, repo: project.repo });
+                            }
+                        }
+                    }
+                });
+            }
+        }
+    });
+
+    showDayActivity(date, type, items, handleIssueClick);
 }
 
 function setupEventListeners() {

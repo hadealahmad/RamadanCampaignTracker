@@ -137,23 +137,20 @@ export function parsePointsFromLabels(labels) {
  * @returns {Array} Processed issues
  */
 export function processIssues(issues, thresholdDate) {
-    return issues
-        .filter(issue => {
-            // Exclude pull requests
-            if (issue.pull_request) return false;
+    const processedIssues = issues.map(issue => ({
+        ...issue,
+        isPR: !!issue.pull_request,
+        points: parsePointsFromLabels(issue.labels)
+    }));
 
-            // For closed issues, only include those closed after threshold
-            if (issue.state === 'closed') {
-                const closedDate = new Date(issue.closed_at);
-                return closedDate >= thresholdDate;
-            }
-
-            return true;
-        })
-        .map(issue => ({
-            ...issue,
-            points: parsePointsFromLabels(issue.labels)
-        }));
+    return processedIssues.filter(issue => {
+        // For closed items, only include those closed after threshold
+        if (issue.state === 'closed') {
+            const closedDate = new Date(issue.closed_at);
+            return closedDate >= thresholdDate;
+        }
+        return true;
+    });
 }
 
 /**
@@ -169,21 +166,25 @@ export async function fetchAllProjectsData(projects, settings) {
         const issues = await fetchProjectIssues(project.owner, project.repo, settings.perPage);
         const processedIssues = processIssues(issues, thresholdDate);
 
-        // Calculate project stats
-        const openCount = processedIssues.filter(i => i.state === 'open').length;
-        const closedCount = processedIssues.filter(i => i.state === 'closed').length;
-        const assignedCount = processedIssues.filter(i => i.assignee).length;
-        const totalPoints = processedIssues.reduce((sum, i) => sum + i.points, 0);
-        const commentsCount = processedIssues.reduce((sum, i) => sum + i.comments, 0);
+        const issuesOnly = processedIssues.filter(i => !i.isPR);
+        const prsOnly = processedIssues.filter(i => i.isPR);
+
+        // Calculate project stats for issues
+        const openCount = issuesOnly.filter(i => i.state === 'open').length;
+        const closedCount = issuesOnly.filter(i => i.state === 'closed').length;
+        const assignedCount = issuesOnly.filter(i => i.assignee).length;
+        const totalPoints = issuesOnly.reduce((sum, i) => sum + i.points, 0);
+        const commentsCount = issuesOnly.reduce((sum, i) => sum + i.comments, 0);
 
         return {
             ...project,
-            issues: processedIssues,
+            issues: issuesOnly,
+            prs: prsOnly,
             stats: {
                 open: openCount,
                 closed: closedCount,
                 assigned: assignedCount,
-                total: processedIssues.length,
+                total: issuesOnly.length,
                 points: totalPoints,
                 comments: commentsCount
             }

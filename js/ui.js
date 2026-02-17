@@ -8,6 +8,8 @@ import { openModal } from './modal.js';
 // Cache DOM elements
 let leaderboardEl, contributorsLeaderboardEl, loadingEl, emptyEl;
 let statOpen, statComments, statAssigned, statClosed, statPoints;
+let heatmapAssignedEl, heatmapClosedEl, heatmapMergedPrsEl, heatmapOpenPrsEl;
+let dayModalEl, dayBackdropEl, dayIssuesListEl, dayModalTitleEl;
 
 // Issue cache to avoid storing large JSON in HTML attributes
 const issueCache = new Map();
@@ -22,6 +24,18 @@ export function initUI() {
   statAssigned = document.getElementById('stat-assigned');
   statClosed = document.getElementById('stat-closed');
   statPoints = document.getElementById('stat-points');
+  heatmapAssignedEl = document.getElementById('heatmap-assigned');
+  heatmapClosedEl = document.getElementById('heatmap-closed');
+  heatmapMergedPrsEl = document.getElementById('heatmap-merged-prs');
+  heatmapOpenPrsEl = document.getElementById('heatmap-open-prs');
+  dayModalEl = document.getElementById('day-modal');
+  dayBackdropEl = document.getElementById('day-backdrop');
+  dayIssuesListEl = document.getElementById('day-issues-list');
+  dayModalTitleEl = document.getElementById('day-modal-title');
+
+  // Close day modal listeners
+  document.getElementById('day-modal-close')?.addEventListener('click', closeDayModal);
+  dayBackdropEl?.addEventListener('click', closeDayModal);
 }
 
 export function renderStats(stats) {
@@ -143,17 +157,25 @@ function renderProjectCard(project, rank, isExpanded) {
   `;
 }
 
-function renderIssueCard(issue, owner, repo) {
+export function renderIssueCard(issue, owner, repo) {
   const statusClass = issue.state === 'open' ? 'open' : 'closed';
   const pointsBadge = issue.points > 0
     ? `<span class="badge badge-points">${issue.points}</span>`
     : '';
 
-  const labels = issue.labels
+  const assigneeName = issue.assignee
+    ? `<span class="assignee-name truncate max-w-[80px]">${issue.assignee.login}</span>`
+    : '';
+
+  const labels = (issue.labels || [])
     .filter(l => !l.name.match(/^\d+/))
     .slice(0, 3)
     .map(l => `<span class="badge badge-secondary" style="background-color: #${l.color}20; color: #${l.color}; border-color: #${l.color}50">${l.name}</span>`)
     .join('');
+
+  const githubLink = `<a href="${issue.html_url}" target="_blank" rel="noopener" class="text-muted-foreground hover:text-primary transition-colors ml-auto mr-2" title="فتح في GitHub">
+    <i data-lucide="external-link" class="w-3 h-3"></i>
+  </a>`;
 
   const assignee = issue.assignee
     ? `<div class="avatar"><img src="${issue.assignee.avatar_url}" alt="${issue.assignee.login}"></div>`
@@ -168,13 +190,19 @@ function renderIssueCard(issue, owner, repo) {
     <div class="issue-card" data-issue-key="${issueKey}">
       <div class="issue-status ${statusClass}"></div>
       <div class="issue-content">
-        <div class="issue-title">${issue.title}</div>
+        <div class="flex items-center gap-2">
+          <div class="issue-title truncate">${issue.title}</div>
+          ${githubLink}
+        </div>
         <div class="issue-labels">
           ${pointsBadge}
           ${labels}
         </div>
         <div class="issue-meta">
-          ${assignee}
+          <div class="flex items-center gap-1">
+            ${assignee}
+            ${assigneeName}
+          </div>
           <span class="issue-meta-item">
             <i data-lucide="message-circle" class="w-3 h-3"></i>
             ${issue.comments}
@@ -289,4 +317,104 @@ export function renderFiltersBar(filters, onChange) {
     sortSelect.value = filters.sortBy;
     sortSelect.onchange = () => onChange('sortBy', sortSelect.value);
   }
+}
+
+/**
+ * Render heatmaps for assigned and closed issues
+ * @param {Object} data { assigned, closed }
+ * @param {Function} onDayClick callback(date, type)
+ */
+export function renderHeatmaps(data, onDayClick) {
+  if (!heatmapAssignedEl || !heatmapClosedEl) return;
+
+  const renderGrid = (container, counts, type) => {
+    if (!container) return;
+    const dates = Object.keys(counts).sort();
+    const html = dates.map(date => {
+      const count = counts[date];
+      let level = 0;
+      if (count > 0) level = 1;
+      if (count > 3) level = 2;
+      if (count > 7) level = 3;
+      if (count > 12) level = 4;
+
+      const formattedDate = new Date(date).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' });
+      const tooltip = `${formattedDate}: ${count} عنصر`;
+
+      return `<div 
+        class="heatmap-cell" 
+        data-count="${count}" 
+        data-level="${level}" 
+        data-tooltip="${tooltip}" 
+        data-date="${date}"
+        data-type="${type}"
+      ></div>`;
+    }).join('');
+
+    container.innerHTML = html;
+
+    // Add click listeners
+    container.querySelectorAll('.heatmap-cell').forEach(cell => {
+      cell.addEventListener('click', (e) => {
+        const date = cell.dataset.date;
+        const type = cell.dataset.type;
+        onDayClick(date, type);
+      });
+    });
+  };
+
+  renderGrid(heatmapAssignedEl, data.assigned, 'assigned');
+  renderGrid(heatmapClosedEl, data.closed, 'closed');
+  renderGrid(heatmapMergedPrsEl, data.merged_prs, 'merged_prs');
+  renderGrid(heatmapOpenPrsEl, data.open_prs, 'open_prs');
+}
+
+export function showDayActivity(date, type, issues, onIssueClick) {
+  if (!dayModalEl || !dayIssuesListEl || !dayModalTitleEl) return;
+
+  const formattedDate = new Date(date).toLocaleDateString('ar-EG', { month: 'long', day: 'numeric', year: 'numeric' });
+
+  let typeText = 'نشاط اليوم';
+  switch (type) {
+    case 'assigned': typeText = 'المهام المسندة'; break;
+    case 'closed': typeText = 'المهام المغلقة'; break;
+    case 'merged_prs': typeText = 'طلبات السحب المدمجة'; break;
+    case 'open_prs': typeText = 'طلبات السحب المفتوحة'; break;
+  }
+
+  dayModalTitleEl.textContent = `${typeText} - ${formattedDate}`;
+
+  if (issues.length === 0) {
+    dayIssuesListEl.innerHTML = '<p class="text-center py-8 text-muted-foreground">لا توجد عناصر في هذا اليوم.</p>';
+  } else {
+    dayIssuesListEl.innerHTML = issues.map(item =>
+      renderIssueCard(item.issue, item.owner, item.repo)
+    ).join('');
+
+    // Attach issue click listeners
+    dayIssuesListEl.querySelectorAll('.issue-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        // If clicked on an actual link, don't open modal
+        if (e.target.closest('a')) return;
+
+        const issueKey = card.dataset.issueKey;
+        const cached = issueCache.get(issueKey);
+        if (cached) {
+          onIssueClick(cached.issue, cached.owner, cached.repo);
+        }
+      });
+    });
+  }
+
+  dayBackdropEl.classList.add('active');
+  dayModalEl.classList.add('active');
+  document.body.style.overflow = 'hidden';
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+export function closeDayModal() {
+  dayBackdropEl?.classList.remove('active');
+  dayModalEl?.classList.remove('active');
+  document.body.style.overflow = '';
 }

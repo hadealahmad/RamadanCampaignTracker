@@ -178,3 +178,74 @@ export function buildContributorLeaderboard(projects, thresholdDate, sortBy = 'p
 
     return leaderboard;
 }
+
+/**
+ * Calculate daily counts for assigned and closed issues within a date range
+ * @param {Array} projects - Array of projects
+ * @param {string} startDateStr - Start date string
+ * @param {string} endDateStr - End date string
+ * @returns {Object} { assigned: { 'YYYY-MM-DD': count }, closed: { 'YYYY-MM-DD': count } }
+ */
+export function calculateDailyCounts(projects, startDateStr, endDateStr) {
+    const data = {
+        assigned: {},
+        closed: {},
+        merged_prs: {},
+        open_prs: {}
+    };
+
+    const start = new Date(startDateStr);
+    const end = new Date(endDateStr);
+
+    // Initialize all days in range with 0
+    let curr = new Date(start);
+    while (curr <= end) {
+        const dateStr = curr.toISOString().split('T')[0];
+        data.assigned[dateStr] = 0;
+        data.closed[dateStr] = 0;
+        data.merged_prs[dateStr] = 0;
+        data.open_prs[dateStr] = 0;
+        curr.setDate(curr.getDate() + 1);
+    }
+
+    projects.forEach(project => {
+        // Process Issues
+        project.issues.forEach(issue => {
+            // Assigned
+            if (issue.created_at) {
+                const dateStr = new Date(issue.created_at).toISOString().split('T')[0];
+                if (data.assigned[dateStr] !== undefined) {
+                    data.assigned[dateStr]++;
+                }
+            }
+
+            // Closed
+            if (issue.state === 'closed' && issue.closed_at) {
+                const dateStr = new Date(issue.closed_at).toISOString().split('T')[0];
+                if (data.closed[dateStr] !== undefined) {
+                    data.closed[dateStr]++;
+                }
+            }
+        });
+
+        // Process PRs
+        if (project.prs) {
+            project.prs.forEach(pr => {
+                const dateCreated = new Date(pr.created_at).toISOString().split('T')[0];
+
+                if (pr.state === 'closed' && pr.closed_at) {
+                    const dateClosed = new Date(pr.closed_at).toISOString().split('T')[0];
+                    if (data.merged_prs[dateClosed] !== undefined) {
+                        data.merged_prs[dateClosed]++;
+                    }
+                } else if (pr.state === 'open') {
+                    if (data.open_prs[dateCreated] !== undefined) {
+                        data.open_prs[dateCreated]++;
+                    }
+                }
+            });
+        }
+    });
+
+    return data;
+}

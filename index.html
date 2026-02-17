@@ -94,6 +94,89 @@
 
     <!-- Main Content -->
     <main class="max-w-6xl mx-auto px-4 py-6">
+        <!-- Heatmap Section -->
+        <div id="heatmap-section" class="mb-8 space-y-4">
+            <div class="card p-4">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-semibold flex items-center gap-2">
+                        <i data-lucide="calendar" class="w-4 h-4 text-primary"></i>
+                        خريطة النشاط (30 يناير - 30 مارس)
+                    </h3>
+                    <div class="flex items-center gap-4 text-xs text-muted-foreground">
+                        <div class="flex items-center gap-1">
+                            <span class="w-2 h-2 rounded-sm bg-muted"></span>
+                            <span>أقل</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="w-2 h-2 rounded-sm bg-primary opacity-20"></span>
+                            <span class="w-2 h-2 rounded-sm bg-primary opacity-50"></span>
+                            <span class="w-2 h-2 rounded-sm bg-primary opacity-80"></span>
+                            <span class="w-2 h-2 rounded-sm bg-primary"></span>
+                            <span>أكثر</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Assigned Heatmap -->
+                    <div>
+                        <div class="text-xs font-medium mb-3 text-muted-foreground flex items-center gap-1">
+                            <i data-lucide="user-plus" class="w-3 h-3"></i>
+                            المهام المسندة يومياً
+                        </div>
+                        <div id="heatmap-assigned" class="heatmap-container">
+                            <!-- JS will inject heatmap grid here -->
+                        </div>
+                    </div>
+
+                    <!-- Closed Heatmap -->
+                    <div>
+                        <div class="text-xs font-medium mb-3 text-muted-foreground flex items-center gap-1">
+                            <i data-lucide="check-circle-2" class="w-3 h-3"></i>
+                            المهام المغلقة يومياً
+                        </div>
+                        <div id="heatmap-closed" class="heatmap-container">
+                            <!-- JS will inject heatmap grid here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pull Requests Heatmap Section -->
+            <div class="card p-4 mt-4">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-semibold flex items-center gap-2">
+                        <i data-lucide="git-pull-request" class="w-4 h-4 text-orange-500"></i>
+                        خريطة طلبات السحب (PRs)
+                    </h3>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Merged PRs Heatmap -->
+                    <div>
+                        <div class="text-xs font-medium mb-3 text-muted-foreground flex items-center gap-1">
+                            <i data-lucide="git-merge" class="w-3 h-3"></i>
+                            طلبات السحب المدمجة
+                        </div>
+                        <div id="heatmap-merged-prs" class="heatmap-container">
+                            <!-- JS will inject heatmap grid here -->
+                        </div>
+                    </div>
+
+                    <!-- Open PRs Heatmap -->
+                    <div>
+                        <div class="text-xs font-medium mb-3 text-muted-foreground flex items-center gap-1">
+                            <i data-lucide="clock" class="w-3 h-3"></i>
+                            طلبات السحب المفتوحة/المنتظرة
+                        </div>
+                        <div id="heatmap-open-prs" class="heatmap-container">
+                            <!-- JS will inject heatmap grid here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Tabs -->
         <div class="tabs-container mb-4">
             <div class="tabs">
@@ -274,6 +357,22 @@
                 class="text-primary hover:underline">مجتمع إتقان</a> 💚
         </div>
     </footer>
+
+    <!-- Day Activity Modal -->
+    <div id="day-backdrop" class="modal-backdrop"></div>
+    <div id="day-modal" class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title" id="day-modal-title">نشاط اليوم</h2>
+            <button class="modal-close" id="day-modal-close">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div id="day-issues-list" class="space-y-3">
+                <!-- Issues will be injected here -->
+            </div>
+        </div>
+    </div>
 
     <!-- App Scripts -->
     <script type="module" src="js/app.js"></script>
