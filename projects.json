@@ -1,16 +1,6 @@
 {
   "projects": [
     {
-      "id": "quran-apps-directory",
-      "owner": "Itqan-community",
-      "repo": "quran-apps-directory",
-      "name": "دليل التطبيقات القرآنية",
-      "publisher": "أبو بكر عبد الرحمن",
-      "icon": "📚",
-      "category": "community",
-      "order": 1
-    },
-    {
       "id": "cms-backend",
       "owner": "Itqan-community",
       "repo": "cms-backend",
@@ -18,7 +8,7 @@
       "publisher": "عبد الوهاب الهندي",
       "icon": "⚙️",
       "category": "platform",
-      "order": 2
+      "order": 1
     },
     {
       "id": "cms-frontend",
@@ -28,7 +18,7 @@
       "publisher": "عبد الوهاب الهندي",
       "icon": "🎨",
       "category": "platform",
-      "order": 2
+      "order": 1
     },
     {
       "id": "mushaf-imad-swift",
@@ -38,7 +28,7 @@
       "publisher": "إبراهيم قريقع",
       "icon": "📱",
       "category": "mushaf",
-      "order": 3
+      "order": 2
     },
     {
       "id": "mushaf-imad-rn",
@@ -48,7 +38,7 @@
       "publisher": "عادل بن يحي",
       "icon": "📱",
       "category": "mushaf",
-      "order": 4
+      "order": 3
     },
     {
       "id": "mushaf-imad-android",
@@ -58,77 +48,7 @@
       "publisher": "يحيى رجائي",
       "icon": "📱",
       "category": "mushaf",
-      "order": 5
-    },
-    {
-      "id": "quran-search-engine",
-      "owner": "adelpro",
-      "repo": "quran-search-engine",
-      "name": "محرك البحث القرآني",
-      "publisher": "عادل بن يحي",
-      "icon": "🔍",
-      "category": "tools",
-      "order": 6
-    },
-    {
-      "id": "open-mushaf-native",
-      "owner": "adelpro",
-      "repo": "open-mushaf-native",
-      "name": "Open Mushaf Native",
-      "publisher": "عادل بن يحي",
-      "icon": "📖",
-      "category": "mushaf",
-      "order": 7
-    },
-    {
-      "id": "open-tarteel-tv",
-      "owner": "adelpro",
-      "repo": "open-tarteel-tv",
-      "name": "Open Tarteel TV",
-      "publisher": "عادل بن يحي",
-      "icon": "📺",
-      "category": "recitation",
-      "order": 8
-    },
-    {
-      "id": "open-tarteel",
-      "owner": "adelpro",
-      "repo": "open-tarteel",
-      "name": "Open Tarteel",
-      "publisher": "عادل بن يحي",
-      "icon": "🎙️",
-      "category": "recitation",
-      "order": 9
-    },
-    {
-      "id": "obsidian-quran-helper",
-      "owner": "AmmarCodes",
-      "repo": "obsidian-quran-helper-plugin",
-      "name": "إضافة المساعد القرآني لأوبسيديان",
-      "publisher": "عمار العقاد",
-      "icon": "💎",
-      "category": "tools",
-      "order": 10
-    },
-    {
-      "id": "monthly-quran",
-      "owner": "hadealahmad",
-      "repo": "MonthlyQuran",
-      "name": "Monthly Quran القرآن الشهري",
-      "publisher": "هادي الأحمد",
-      "icon": "📅",
-      "category": "personal",
-      "order": 11
-    },
-    {
-      "id": "wird-reminder",
-      "owner": "hadealahmad",
-      "repo": "WirdReminder",
-      "name": "مذكر الورد",
-      "publisher": "هادي الأحمد",
-      "icon": "⏰",
-      "category": "personal",
-      "order": 12
+      "order": 4
     },
     {
       "id": "munajjam",
@@ -138,7 +58,7 @@
       "publisher": "إتقان",
       "icon": "🎯",
       "category": "tools",
-      "order": 13
+      "order": 5
     },
     {
       "id": "ratq",
@@ -148,7 +68,77 @@
       "publisher": "إتقان",
       "icon": "🧵",
       "category": "mushaf",
-      "order": 14
+      "order": 6
+    },
+    {
+      "id": "quran-search-engine",
+      "owner": "adelpro",
+      "repo": "quran-search-engine",
+      "name": "محرك البحث القرآني",
+      "publisher": "عادل بن يحي",
+      "icon": "🔍",
+      "category": "tools",
+      "order": 7
+    },
+    {
+      "id": "open-mushaf-native",
+      "owner": "adelpro",
+      "repo": "open-mushaf-native",
+      "name": "Open Mushaf Native",
+      "publisher": "عادل بن يحي",
+      "icon": "📖",
+      "category": "mushaf",
+      "order": 8
+    },
+    {
+      "id": "open-tarteel-tv",
+      "owner": "adelpro",
+      "repo": "open-tarteel-tv",
+      "name": "Open Tarteel TV",
+      "publisher": "عادل بن يحي",
+      "icon": "📺",
+      "category": "recitation",
+      "order": 9
+    },
+    {
+      "id": "open-tarteel",
+      "owner": "adelpro",
+      "repo": "open-tarteel",
+      "name": "Open Tarteel",
+      "publisher": "عادل بن يحي",
+      "icon": "🎙️",
+      "category": "recitation",
+      "order": 10
+    },
+    {
+      "id": "obsidian-quran-helper",
+      "owner": "AmmarCodes",
+      "repo": "obsidian-quran-helper-plugin",
+      "name": "إضافة المساعد القرآني لأوبسيديان",
+      "publisher": "عمار العقاد",
+      "icon": "💎",
+      "category": "tools",
+      "order": 11
+    },
+    {
+      "id": "monthly-quran",
+      "owner": "hadealahmad",
+      "repo": "MonthlyQuran",
+      "name": "Monthly Quran القرآن الشهري",
+      "publisher": "هادي الأحمد",
+      "icon": "📅",
+      "category": "personal",
+      "order": 12
+    },
+    {
+      "id": "wird-reminder",
+      "owner": "hadealahmad",
+      "repo": "WirdReminder",
+      "name": "WirdReminder",
+      "publisher": "هادي الأحمد",
+      "icon": "⏰",
+      "category": "personal",
+      "order": 13
     }
   ],
   "settings": {
