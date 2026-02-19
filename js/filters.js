@@ -94,8 +94,8 @@ export function calculateGlobalStats(projects, thresholdDate) {
 
     const openPRs = allPRs.filter(p => p.state === 'open');
     const mergedPRs = allPRs.filter(p => {
-        if (p.state !== 'closed' || !p.closed_at) return false;
-        return new Date(p.closed_at) >= new Date(thresholdDate);
+        if (!p.merged_at) return false;
+        return new Date(p.merged_at) >= new Date(thresholdDate);
     });
 
     const totalPoints = allIssues.reduce((sum, i) => sum + i.points, 0);
@@ -243,10 +243,10 @@ export function calculateDailyCounts(projects, startDateStr, endDateStr) {
             project.prs.forEach(pr => {
                 const dateCreated = new Date(pr.created_at).toISOString().split('T')[0];
 
-                if (pr.state === 'closed' && pr.closed_at) {
-                    const dateClosed = new Date(pr.closed_at).toISOString().split('T')[0];
-                    if (data.merged_prs[dateClosed] !== undefined) {
-                        data.merged_prs[dateClosed]++;
+                if (pr.merged_at) {
+                    const dateMerged = new Date(pr.merged_at).toISOString().split('T')[0];
+                    if (data.merged_prs[dateMerged] !== undefined) {
+                        data.merged_prs[dateMerged]++;
                     }
                 } else if (pr.state === 'open') {
                     if (data.open_prs[dateCreated] !== undefined) {

@@ -178,8 +178,8 @@ function handleDayClick(date, type) {
             if (project.prs) {
                 project.prs.forEach(pr => {
                     if (type === 'merged_prs') {
-                        if (pr.state === 'closed' && pr.closed_at) {
-                            const prDate = new Date(pr.closed_at).toISOString().split('T')[0];
+                        if (pr.merged_at) {
+                            const prDate = new Date(pr.merged_at).toISOString().split('T')[0];
                             if (prDate === date) {
                                 items.push({ issue: pr, owner: project.owner, repo: project.repo, projectName: project.name });
                             }

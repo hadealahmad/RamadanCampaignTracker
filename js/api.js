@@ -163,11 +163,30 @@ export async function fetchAllProjectsData(projects, settings) {
     const thresholdDate = new Date(settings.thresholdDate);
 
     const promises = projects.map(async (project) => {
-        const issues = await fetchProjectIssues(project.owner, project.repo, settings.perPage);
-        const processedIssues = processIssues(issues, thresholdDate);
-
+        // Fetch issues and PRs (Issues API returns both, but PRs are simplified)
+        // We fetch issues and filter out PRs
+        const issuesResponse = await fetchProjectIssues(project.owner, project.repo, settings.perPage);
+        const processedIssues = processIssues(issuesResponse, thresholdDate);
         const issuesOnly = processedIssues.filter(i => !i.isPR);
-        const prsOnly = processedIssues.filter(i => i.isPR);
+
+        // Fetch PRs using Pulls API to get merged_at info
+        const pullsUrl = `${GITHUB_API_BASE}/repos/${project.owner}/${project.repo}/pulls?state=all&per_page=${settings.perPage}`;
+        let prsOnly = [];
+        try {
+            const prsResponse = await fetch(pullsUrl, { headers: getHeaders() });
+            if (prsResponse.ok) {
+                const prsRaw = await prsResponse.json();
+                prsOnly = prsRaw.filter(pr => {
+                    if (pr.state === 'closed') {
+                        const closedDate = new Date(pr.closed_at);
+                        return closedDate >= thresholdDate;
+                    }
+                    return true;
+                });
+            }
+        } catch (error) {
+            console.error(`Error fetching PRs for ${project.owner}/${project.repo}:`, error);
+        }
 
         // Calculate project stats for issues
         const openCount = issuesOnly.filter(i => i.state === 'open').length;
