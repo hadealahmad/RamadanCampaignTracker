@@ -10,7 +10,8 @@ export const defaultFilters = {
     points: 'all',
     sortBy: 'order',
     sortOrder: 'asc',
-    contribSort: 'points'
+    contribSort: 'points',
+    prStatus: 'all'
 };
 
 export function filterIssues(issues, filters) {
@@ -81,6 +82,7 @@ export function sortProjects(projects, sortBy, sortOrder) {
 
 export function calculateGlobalStats(projects, thresholdDate) {
     const allIssues = projects.flatMap(p => p.issues);
+    const allPRs = projects.flatMap(p => p.prs || []);
 
     const openIssues = allIssues.filter(i => i.state === 'open');
     const issuesWithComments = allIssues.filter(i => i.comments > 0);
@@ -88,6 +90,12 @@ export function calculateGlobalStats(projects, thresholdDate) {
     const closedSinceThreshold = allIssues.filter(i => {
         if (i.state !== 'closed' || !i.closed_at) return false;
         return new Date(i.closed_at) >= new Date(thresholdDate);
+    });
+
+    const openPRs = allPRs.filter(p => p.state === 'open');
+    const mergedPRs = allPRs.filter(p => {
+        if (p.state !== 'closed' || !p.closed_at) return false;
+        return new Date(p.closed_at) >= new Date(thresholdDate);
     });
 
     const totalPoints = allIssues.reduce((sum, i) => sum + i.points, 0);
@@ -98,6 +106,8 @@ export function calculateGlobalStats(projects, thresholdDate) {
         withComments: issuesWithComments.length,
         withAssignees: issuesWithAssignees.length,
         closedSince: closedSinceThreshold.length,
+        openPRs: openPRs.length,
+        mergedPRs: mergedPRs.length,
         totalPoints,
         collectedPoints
     };

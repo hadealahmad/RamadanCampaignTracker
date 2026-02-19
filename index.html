@@ -71,6 +71,14 @@
                     <span class="navbar-stat-value" id="stat-closed">0</span>
                     <span class="navbar-stat-label">مغلقة</span>
                 </div>
+                <div class="navbar-stat">
+                    <span class="navbar-stat-value" id="stat-open-prs">0</span>
+                    <span class="navbar-stat-label">PR مفتوح</span>
+                </div>
+                <div class="navbar-stat">
+                    <span class="navbar-stat-value" id="stat-merged-prs">0</span>
+                    <span class="navbar-stat-label">PR مدمج</span>
+                </div>
                 <div class="navbar-stat navbar-stat-highlight">
                     <span class="navbar-stat-value" id="stat-points">0/0</span>
                     <span class="navbar-stat-label">نقاط</span>
@@ -188,6 +196,10 @@
                     <i data-lucide="users" class="w-4 h-4"></i>
                     المساهمون
                 </button>
+                <button class="tab" data-tab="prs">
+                    <i data-lucide="git-pull-request" class="w-4 h-4"></i>
+                    طلبات السحب
+                </button>
             </div>
         </div>
 
@@ -264,6 +276,21 @@
             </div>
         </div>
 
+        <!-- PRs Filter (for prs tab) -->
+        <div class="filter-bar hidden" id="prs-filter-bar">
+            <div class="filter-section">
+                <!-- PR Status Filter -->
+                <div class="filter-group">
+                    <span class="filter-label">حالة الطلب:</span>
+                    <div class="filter-pills">
+                        <button class="filter-pill active" data-filter="pr-status" data-value="all">الكل</button>
+                        <button class="filter-pill" data-filter="pr-status" data-value="open">مفتوحة</button>
+                        <button class="filter-pill" data-filter="pr-status" data-value="closed">مغلقة/مدمجة</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Loading State -->
         <div id="loading-state" class="flex flex-col items-center justify-center py-20">
             <div class="spinner"></div>
@@ -285,6 +312,11 @@
         <!-- Contributors Tab Content -->
         <div id="contributors-content" class="tab-content hidden">
             <div id="contributors-leaderboard" class="space-y-3"></div>
+        </div>
+
+        <!-- PRs Tab Content -->
+        <div id="prs-content" class="tab-content hidden">
+            <div id="prs-leaderboard" class="space-y-3"></div>
         </div>
     </main>
 

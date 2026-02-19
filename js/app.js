@@ -17,6 +17,7 @@ import {
     renderStats,
     renderLeaderboard,
     renderContributorsLeaderboard,
+    renderPRsLeaderboard,
     renderFiltersBar,
     renderHeatmaps,
     showDayActivity,
@@ -114,7 +115,7 @@ function render() {
             handleProjectToggle,
             handleIssueClick
         );
-    } else {
+    } else if (state.activeTab === 'contributors') {
         // Render contributors leaderboard
         const contributors = buildContributorLeaderboard(
             state.projects,
@@ -123,6 +124,9 @@ function render() {
         );
 
         renderContributorsLeaderboard(contributors, handleIssueClick);
+    } else if (state.activeTab === 'prs') {
+        // Render PRs leaderboard
+        renderPRsLeaderboard(state.projects, state.filters, handleIssueClick);
     }
 }
 
@@ -155,14 +159,14 @@ function handleDayClick(date, type) {
                     if (issue.created_at) {
                         const issueDate = new Date(issue.created_at).toISOString().split('T')[0];
                         if (issueDate === date) {
-                            items.push({ issue, owner: project.owner, repo: project.repo });
+                            items.push({ issue, owner: project.owner, repo: project.repo, projectName: project.name });
                         }
                     }
                 } else if (type === 'closed') {
                     if (issue.state === 'closed' && issue.closed_at) {
                         const issueDate = new Date(issue.closed_at).toISOString().split('T')[0];
                         if (issueDate === date) {
-                            items.push({ issue, owner: project.owner, repo: project.repo });
+                            items.push({ issue, owner: project.owner, repo: project.repo, projectName: project.name });
                         }
                     }
                 }
@@ -177,14 +181,14 @@ function handleDayClick(date, type) {
                         if (pr.state === 'closed' && pr.closed_at) {
                             const prDate = new Date(pr.closed_at).toISOString().split('T')[0];
                             if (prDate === date) {
-                                items.push({ issue: pr, owner: project.owner, repo: project.repo });
+                                items.push({ issue: pr, owner: project.owner, repo: project.repo, projectName: project.name });
                             }
                         }
                     } else if (type === 'open_prs') {
                         if (pr.state === 'open') {
                             const prDate = new Date(pr.created_at).toISOString().split('T')[0];
                             if (prDate === date) {
-                                items.push({ issue: pr, owner: project.owner, repo: project.repo });
+                                items.push({ issue: pr, owner: project.owner, repo: project.repo, projectName: project.name });
                             }
                         }
                     }
@@ -309,8 +313,10 @@ function setupTabs() {
     const tabs = document.querySelectorAll('.tab');
     const reposContent = document.getElementById('repos-content');
     const contributorsContent = document.getElementById('contributors-content');
+    const prsContent = document.getElementById('prs-content');
     const filterBar = document.getElementById('filter-bar');
     const contributorsFilterBar = document.getElementById('contributors-filter-bar');
+    const prsFilterBar = document.getElementById('prs-filter-bar');
 
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
@@ -322,17 +328,14 @@ function setupTabs() {
             tab.classList.add('active');
 
             // Show/hide content
-            if (tabName === 'repos') {
-                reposContent?.classList.remove('hidden');
-                contributorsContent?.classList.add('hidden');
-                filterBar?.classList.remove('hidden');
-                contributorsFilterBar?.classList.add('hidden');
-            } else {
-                reposContent?.classList.add('hidden');
-                contributorsContent?.classList.remove('hidden');
-                filterBar?.classList.add('hidden');
-                contributorsFilterBar?.classList.remove('hidden');
-            }
+            reposContent?.classList.toggle('hidden', tabName !== 'repos');
+            contributorsContent?.classList.toggle('hidden', tabName !== 'contributors');
+            prsContent?.classList.toggle('hidden', tabName !== 'prs');
+
+            // Show/hide filter bars
+            filterBar?.classList.toggle('hidden', tabName !== 'repos');
+            contributorsFilterBar?.classList.toggle('hidden', tabName !== 'contributors');
+            prsFilterBar?.classList.toggle('hidden', tabName !== 'prs');
 
             render();
         });

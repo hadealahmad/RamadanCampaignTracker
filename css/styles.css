@@ -599,6 +599,18 @@ body {
   background: hsl(271 91% 65%);
 }
 
+.pr-card {
+  border-right: 4px solid transparent;
+}
+
+.pr-card .issue-status.open {
+  background-color: hsl(142 76% 36%);
+}
+
+.pr-card .issue-status.closed {
+  background-color: hsl(271 91% 65%);
+}
+
 .issue-content {
   flex: 1;
   min-width: 0;
@@ -1008,7 +1020,7 @@ body {
   gap: 3px;
   width: 100%;
   overflow-x: auto;
-  padding: 5px 0;
+  padding: 25px 0 5px 0;
 }
 
 .heatmap-cell {
