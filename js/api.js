@@ -99,7 +99,7 @@ export async function fetchIssueComments(owner, repo, issueNumber) {
 
 /**
  * Parse points from issue labels
- * Supports formats: "100", "100 points", "100pts", "pts-100", "points-100"
+ * Supports formats: "100", "100 points", "100pts", "100 poins", "pts-100", "points-100", "points:100"
  * @param {Array} labels - Array of label objects
  * @returns {number} Points value
  */
@@ -107,24 +107,20 @@ export function parsePointsFromLabels(labels) {
     if (!labels || !labels.length) return 0;
 
     const pointLabel = labels.find(l => {
-        // Match: "100", "100 points", "100pts"
-        // Or: "pts-100", "points-100"
-        return /^(\d+)(\s*(points?|poins|pts))?$/i.test(l.name) ||
-            /^(pts|points?)-(\d+)$/i.test(l.name);
+        // Match: "100", "100 points", "100pts", "100 poins"
+        if (/^(\d+)[\s:-]*(points?|poins|pts)?$/i.test(l.name)) return true;
+
+        // Match: "pts-100", "points-100", "points:100", "pts 100"
+        if (/^(pts|points?|poins)[\s:-]*(\d+)$/i.test(l.name)) return true;
+
+        return false;
     });
 
     if (!pointLabel) return 0;
 
-    // Try parsing "pts-100" format first
-    const prefixMatch = pointLabel.name.match(/^(?:pts|points?)-(\d+)$/i);
-    if (prefixMatch) {
-        return parseInt(prefixMatch[1], 10);
-    }
-
-    // Parse standard "100", "100 points" format
-    const numberMatch = pointLabel.name.match(/^(\d+)/);
-    if (numberMatch) {
-        return parseInt(numberMatch[1], 10);
+    const match = pointLabel.name.match(/\d+/);
+    if (match) {
+        return parseInt(match[0], 10);
     }
 
     return 0;
