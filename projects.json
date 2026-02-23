@@ -51,6 +51,16 @@
       "order": 4
     },
     {
+      "id": "mushaf-imad-flutter",
+      "owner": "Itqan-community",
+      "repo": "mushaf-imad-flutter",
+      "name": "حزمة مصحف عماد - Flutter",
+      "publisher": "إتقان",
+      "icon": "📱",
+      "category": "mushaf",
+      "order": 5
+    },
+    {
       "id": "munajjam",
       "owner": "Itqan-community",
       "repo": "Munajjam",
@@ -58,7 +68,7 @@
       "publisher": "إتقان",
       "icon": "🎯",
       "category": "tools",
-      "order": 5
+      "order": 6
     },
     {
       "id": "ratq",
@@ -68,7 +78,7 @@
       "publisher": "إتقان",
       "icon": "🧵",
       "category": "mushaf",
-      "order": 6
+      "order": 7
     },
     {
       "id": "quran-search-engine",
@@ -78,7 +88,7 @@
       "publisher": "عادل بن يحي",
       "icon": "🔍",
       "category": "tools",
-      "order": 7
+      "order": 8
     },
     {
       "id": "open-mushaf-native",
@@ -88,7 +98,7 @@
       "publisher": "عادل بن يحي",
       "icon": "📖",
       "category": "mushaf",
-      "order": 8
+      "order": 9
     },
     {
       "id": "open-tarteel-tv",
@@ -98,7 +108,7 @@
       "publisher": "عادل بن يحي",
       "icon": "📺",
       "category": "recitation",
-      "order": 9
+      "order": 10
     },
     {
       "id": "open-tarteel",
@@ -108,7 +118,7 @@
       "publisher": "عادل بن يحي",
       "icon": "🎙️",
       "category": "recitation",
-      "order": 10
+      "order": 11
     },
     {
       "id": "obsidian-quran-helper",
@@ -118,7 +128,7 @@
       "publisher": "عمار العقاد",
       "icon": "💎",
       "category": "tools",
-      "order": 11
+      "order": 12
     },
     {
       "id": "monthly-quran",
@@ -128,7 +138,7 @@
       "publisher": "هادي الأحمد",
       "icon": "📅",
       "category": "personal",
-      "order": 12
+      "order": 13
     },
     {
       "id": "wird-reminder",
@@ -138,7 +148,7 @@
       "publisher": "هادي الأحمد",
       "icon": "⏰",
       "category": "personal",
-      "order": 13
+      "order": 14
     }
   ],
   "settings": {
