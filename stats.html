@@ -15,9 +15,11 @@
     <!-- Scripts -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script>window.react = React;</script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script>
+        window.react = window.React;
+    </script>
     <script src="https://unpkg.com/lucide-react@latest/dist/umd/lucide-react.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 
     <script>
@@ -64,11 +66,7 @@
 
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
-        const {
-            Settings, RefreshCw, AlertCircle, CheckCircle2,
-            XCircle, ExternalLink, MessageCircle, Github, User,
-            ChevronRight, Home
-        } = LucideReact;
+        // icons will be destructured inside App component
 
         // قائمة المشاريع المستخرجة من طلبك
         const REPOS = [
@@ -116,6 +114,13 @@
         };
 
         function App() {
+            // Destructure icons inside the component to ensure LucideReact is ready
+            const {
+                Settings, RefreshCw, AlertCircle, CheckCircle2,
+                XCircle, ExternalLink, MessageCircle, Github, User,
+                ChevronRight, Home
+            } = LucideReact || {};
+
             const [apiKey, setApiKey] = useState(localStorage.getItem('github_token') || '');
             const [data, setData] = useState([]);
             const [loading, setLoading] = useState(false);
@@ -123,6 +128,15 @@
             const [rateLimitHit, setRateLimitHit] = useState(false);
             const [selectedCategory, setSelectedCategory] = useState(null);
             const [selectedProjectFilter, setSelectedProjectFilter] = useState('all');
+
+            // Safety check for icons
+            if (!Settings || !RefreshCw) {
+                return (
+                    <div className="flex items-center justify-center min-h-screen bg-slate-50">
+                        <div className="text-slate-500 font-medium animate-pulse">جاري تحميل الأيقونات...</div>
+                    </div>
+                );
+            }
 
             // تحديث المفتاح في LocalStorage
             useEffect(() => {
