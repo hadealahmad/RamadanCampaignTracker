@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إحصائيات المشاريع | مبادرة رمضان الأثر</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide-react@latest/dist/umd/lucide-react.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['IBM Plex Sans Arabic', 'sans-serif'],
+                        'ibm': ['IBM Plex Sans Arabic', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'IBM Plex Sans Arabic', sans-serif;
+            background-color: #f8fafc;
+            /* slate-50 */
+        }
+
+        /* Custom scrollbar for better look */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+        const {
+            Settings, RefreshCw, AlertCircle, CheckCircle2,
+            XCircle, ExternalLink, MessageCircle, Github, User,
+            ChevronRight, Home
+        } = LucideReact;
+
+        // قائمة المشاريع المستخرجة من طلبك
+        const REPOS = [
+            { owner: 'Itqan-community', repo: 'cms-backend', name: 'نظام إدارة المحتوى القرآني - Backend' },
+            { owner: 'Itqan-community', repo: 'cms-frontend', name: 'نظام إدارة المحتوى القرآني - Frontend' },
+            { owner: 'ibo2001', repo: 'MushafImad', name: 'حزمة مصحف عماد - سويفت' },
+            { owner: 'adelpro', repo: 'mushaf-imad-rn', name: 'حزمة مصحف عماد - React Native' },
+            { owner: 'YahiaRagae', repo: 'mushaf-imad-android', name: 'حزمة مصحف عماد-كوتلن' },
+            { owner: 'Itqan-community', repo: 'mushaf-imad-flutter', name: 'حزمة مصحف عماد - فلاتر' },
+            { owner: 'Itqan-community', repo: 'Munajjam', name: 'منجم' },
+            { owner: 'Itqan-community', repo: 'RATQ', name: 'رتق' },
+            { owner: 'adelpro', repo: 'quran-search-engine', name: 'محرك البحث القرآني' },
+            { owner: 'adelpro', repo: 'open-mushaf-native', name: 'Open Mushaf Native' },
+            { owner: 'adelpro', repo: 'open-tarteel-tv', name: 'Open Tarteel TV' },
+            { owner: 'adelpro', repo: 'open-tarteel', name: 'Open Tarteel' },
+            { owner: 'AmmarCodes', repo: 'obsidian-quran-helper-plugin', name: 'إضافة المساعد القرآني لأوبسيديان' },
+            { owner: 'hadealahmad', repo: 'MonthlyQuran', name: 'Monthly Quran القرآن الشهري' },
+            { owner: 'hadealahmad', repo: 'WirdReminder', name: 'Wird Reminder' }
+        ];
+
+        const PROJECT_COLORS = [
+            'bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-purple-500',
+            'bg-pink-500', 'bg-rose-500', 'bg-indigo-500', 'bg-cyan-500',
+            'bg-teal-500', 'bg-fuchsia-500', 'bg-violet-500', 'bg-sky-500',
+            'bg-lime-500', 'bg-orange-500'
+        ];
+
+        const START_DATE = new Date('2026-01-30T00:00:00Z');
+        const END_DATE = new Date('2026-03-30T23:59:59Z');
+
+        // دالة لاستخراج النقاط من تصنيفات (Labels) القضية
+        const extractPoints = (labels) => {
+            if (!labels || !Array.isArray(labels)) return 0;
+            for (const label of labels) {
+                const name = label.name.trim();
+                // التقاط: 100, 100 pts, 100 points, 100 poins
+                let match = name.match(/^(\d+)\s*(pts|points|poins)?$/i);
+                if (match) return parseInt(match[1], 10);
+
+                // التقاط: points:100, pts-100
+                match = name.match(/^(points:|pts-)\s*(\d+)$/i);
+                if (match) return parseInt(match[2], 10);
+            }
+            return 0;
+        };
+
+        function App() {
+            const [apiKey, setApiKey] = useState(localStorage.getItem('github_token') || '');
+            const [data, setData] = useState([]);
+            const [loading, setLoading] = useState(false);
+            const [progress, setProgress] = useState('');
+            const [rateLimitHit, setRateLimitHit] = useState(false);
+            const [selectedCategory, setSelectedCategory] = useState(null);
+            const [selectedProjectFilter, setSelectedProjectFilter] = useState('all');
+
+            // تحديث المفتاح في LocalStorage
+            useEffect(() => {
+                localStorage.setItem('github_token', apiKey);
+            }, [apiKey]);
+
+            const isWithinRange = (dateString) => {
+                if (!dateString) return false;
+                const d = new Date(dateString);
+                return d >= START_DATE && d <= END_DATE;
+            };
+
+            const fetchData = async () => {
+                setLoading(true);
+                setRateLimitHit(false);
+                setData([]);
+                setSelectedCategory(null);
+                let allItems = [];
+
+                const headers = {
+                    'Accept': 'application/vnd.github.v3+json'
+                };
+                if (apiKey) {
+                    headers['Authorization'] = `token ${apiKey}`;
+                }
+
+                try {
+                    for (const repo of REPOS) {
+                        setProgress(`جاري جلب بيانات: ${repo.name}...`);
+
+                        // جلب القضايا (تشمل طلبات السحب بدون تفاصيل الدمج)
+                        const issuesRes = await fetch(
+                            `https://api.github.com/repos/${repo.owner}/${repo.repo}/issues?state=all&since=2026-01-30T00:00:00Z&per_page=100`,
+                            { headers }
+                        );
+
+                        if (!issuesRes.ok) {
+                            if (issuesRes.status === 403 || issuesRes.status === 429) setRateLimitHit(true);
+                            throw new Error(`Error ${issuesRes.status}`);
+                        }
+
+                        const issues = await issuesRes.json();
+
+                        // جلب طلبات السحب للحصول على تفاصيل الدمج
+                        const pullsRes = await fetch(
+                            `https://api.github.com/repos/${repo.owner}/${repo.repo}/pulls?state=all&per_page=100`,
+                            { headers }
+                        );
+                        let pulls = [];
+                        if (pullsRes.ok) pulls = await pullsRes.json();
+
+                        for (let item of issues) {
+                            // استبعاد العناصر خارج النطاق الزمني
+                            if (!isWithinRange(item.created_at) && !isWithinRange(item.closed_at)) continue;
+
+                            item.repo_info = repo;
+                            const isPR = !!item.pull_request;
+
+                            if (isPR) {
+                                const pullData = pulls.find(p => p.number === item.number);
+                                if (pullData) item.merged_at = pullData.merged_at;
+                            }
+
+                            // استخراج النقاط من التصنيفات (Labels)
+                            item.points = extractPoints(item.labels);
+
+                            // تتبع التعليقات للقضايا ولطلبات السحب المفتوحة
+                            item.comment_details = { owner_replied: false, others_replied: false };
+                            if (item.comments > 0 && (!isPR || (isPR && item.state === 'open'))) {
+                                try {
+                                    const commentsRes = await fetch(item.comments_url, { headers });
+                                    if (commentsRes.ok) {
+                                        const comments = await commentsRes.json();
+                                        item.comment_details.owner_replied = comments.some(c => c.user.login === repo.owner);
+                                        item.comment_details.others_replied = comments.some(c => c.user.login !== repo.owner);
+                                    } else if (commentsRes.status === 403) {
+                                        setRateLimitHit(true);
+                                    }
+                                } catch (err) {
+                                    console.warn("تعذر جلب التعليقات", err);
+                                }
+                            }
+
+                            allItems.push(item);
+                        }
+                    }
+                    setData(allItems);
+                    setProgress('تم الانتهاء بنجاح!');
+                } catch (error) {
+                    console.error(error);
+                    setProgress('توقف الجلب بسبب خطأ (ربما وصلت لحدود API).');
+                } finally {
+                    setLoading(false);
+                    setTimeout(() => setProgress(''), 3000);
+                }
+            };
+
+            const filteredData = useMemo(() => {
+                if (selectedProjectFilter === 'all') return data;
+                return data.filter(item => item.repo_info.name === selectedProjectFilter);
+            }, [data, selectedProjectFilter]);
+
+            useEffect(() => {
+                setSelectedCategory(null);
+            }, [selectedProjectFilter]);
+
+            // معالجة وتصنيف البيانات
+            const stats = useMemo(() => {
+                const issues = filteredData.filter(item => !item.pull_request);
+                const prs = filteredData.filter(item => !!item.pull_request);
+                const issuesWithPoints = issues.filter(i => i.points > 0);
+
+                return {
+                    // 1. القضايا
+                    issues_status: [
+                        { label: 'مفتوحة (غير مسندة)', color: 'bg-red-400', items: issues.filter(i => i.state === 'open' && i.assignees.length === 0) },
+                        { label: 'مفتوحة (مسندة)', color: 'bg-amber-400', items: issues.filter(i => i.state === 'open' && i.assignees.length > 0) },
+                        { label: 'مغلقة (غير مسندة)', color: 'bg-slate-400', items: issues.filter(i => i.state === 'closed' && i.assignees.length === 0) },
+                        { label: 'مغلقة (مسندة)', color: 'bg-emerald-500', items: issues.filter(i => i.state === 'closed' && i.assignees.length > 0) },
+                    ],
+                    // 1.1 توزيع النقاط للقضايا
+                    issues_points_status: [
+                        { label: 'مفتوحة (غير مسندة)', color: 'bg-red-400', items: issuesWithPoints.filter(i => i.state === 'open' && i.assignees.length === 0), value: issuesWithPoints.filter(i => i.state === 'open' && i.assignees.length === 0).reduce((a, b) => a + b.points, 0) },
+                        { label: 'مفتوحة (مسندة)', color: 'bg-amber-400', items: issuesWithPoints.filter(i => i.state === 'open' && i.assignees.length > 0), value: issuesWithPoints.filter(i => i.state === 'open' && i.assignees.length > 0).reduce((a, b) => a + b.points, 0) },
+                        { label: 'مغلقة (غير مسندة)', color: 'bg-slate-400', items: issuesWithPoints.filter(i => i.state === 'closed' && i.assignees.length === 0), value: issuesWithPoints.filter(i => i.state === 'closed' && i.assignees.length === 0).reduce((a, b) => a + b.points, 0) },
+                        { label: 'مغلقة (مسندة)', color: 'bg-emerald-500', items: issuesWithPoints.filter(i => i.state === 'closed' && i.assignees.length > 0), value: issuesWithPoints.filter(i => i.state === 'closed' && i.assignees.length > 0).reduce((a, b) => a + b.points, 0) },
+                    ],
+                    // 1.2 توزيع النقاط حسب المشاريع
+                    project_points: REPOS.map((repo, idx) => {
+                        const repoIssues = issuesWithPoints.filter(i => i.repo_info.name === repo.name);
+                        const sum = repoIssues.reduce((a, b) => a + b.points, 0);
+                        return {
+                            label: repo.name,
+                            color: PROJECT_COLORS[idx % PROJECT_COLORS.length],
+                            items: repoIssues,
+                            value: sum
+                        };
+                    }).filter(seg => seg.value > 0),
+                    // 2. طلبات السحب
+                    prs_status: [
+                        { label: 'مفتوحة (رد المالك)', color: 'bg-blue-600', items: prs.filter(p => p.state === 'open' && p.comment_details.owner_replied) },
+                        { label: 'مفتوحة (لم يرد المالك)', color: 'bg-blue-300', items: prs.filter(p => p.state === 'open' && !p.comment_details.owner_replied) },
+                        { label: 'مدمجة (Merged)', color: 'bg-purple-500', items: prs.filter(p => p.state === 'closed' && p.merged_at) },
+                        { label: 'مرفوضة (Rejected)', color: 'bg-red-500', items: prs.filter(p => p.state === 'closed' && !p.merged_at) },
+                    ],
+                    // 3. مصادر طلبات السحب
+                    prs_ownership: [
+                        { label: 'من مالك المشروع', color: 'bg-teal-500', items: prs.filter(p => p.user.login === p.repo_info.owner) },
+                        { label: 'من آخرين', color: 'bg-indigo-500', items: prs.filter(p => p.user.login !== p.repo_info.owner) },
+                    ],
+                    // 4. القضايا المغلقة
+                    closed_issues: [
+                        { label: 'مغلقة ومسندة', color: 'bg-emerald-500', items: issues.filter(i => i.state === 'closed' && i.assignees.length > 0) },
+                        { label: 'مغلقة وغير مسندة', color: 'bg-slate-400', items: issues.filter(i => i.state === 'closed' && i.assignees.length === 0) },
+                    ],
+                    // 5. تفاعل التعليقات
+                    issues_comments: [
+                        { label: 'بدون تعليقات', color: 'bg-slate-300', items: issues.filter(i => i.comments === 0) },
+                        { label: 'رد من المالك وآخرين', color: 'bg-emerald-400', items: issues.filter(i => i.comments > 0 && i.comment_details.owner_replied && i.comment_details.others_replied) },
+                        { label: 'رد من آخرين (تجاهل المالك)', color: 'bg-rose-500', items: issues.filter(i => i.comments > 0 && !i.comment_details.owner_replied && i.comment_details.others_replied) },
+                        { label: 'رد المالك فقط', color: 'bg-sky-400', items: issues.filter(i => i.comments > 0 && i.comment_details.owner_replied && !i.comment_details.others_replied) },
+                    ]
+                };
+            }, [filteredData]);
+
+            const BarChart = ({ title, segments, unit = 'عنصر' }) => {
+                const total = segments.reduce((acc, seg) => acc + (seg.value !== undefined ? seg.value : seg.items.length), 0);
+                if (total === 0) return null;
+
+                return (
+                    <div className="mb-8 bg-white p-5 rounded-xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
+                        <h3 className="font-bold text-slate-800 mb-4 text-lg border-b pb-3 flex items-center justify-between">
+                            {title}
+                            <span className="bg-slate-100 text-slate-600 text-sm px-3 py-1 rounded-full font-medium">
+                                {total} {unit === 'نقطة' ? 'نقطة إجمالية' : 'إجمالي'}
+                            </span>
+                        </h3>
+
+                        {/* شريط التقدم */}
+                        <div className="h-10 flex rounded-lg overflow-hidden bg-slate-100 shadow-inner">
+                            {segments.map((seg, idx) => {
+                                const val = seg.value !== undefined ? seg.value : seg.items.length;
+                                if (val === 0) return null;
+                                const pct = (val / total) * 100;
+                                return (
+                                    <div
+                                        key={idx}
+                                        onClick={() => setSelectedCategory({ title: `${title} - ${seg.label}`, items: seg.items })}
+                                        className={`h-full ${seg.color} flex items-center justify-center cursor-pointer hover:brightness-110 transition-all border-l border-white/20 relative group`}
+                                        style={{ width: `${pct}%` }}
+                                    >
+                                        {pct > 8 && <span className="text-white font-bold text-sm drop-shadow-md">{val}</span>}
+
+                                        {/* Tooltip */}
+                                        <div className="absolute opacity-0 group-hover:opacity-100 bottom-full mb-2 bg-slate-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10 pointer-events-none transition-opacity">
+                                            {seg.label}: {val} {unit} ({pct.toFixed(1)}%)
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* مفتاح الألوان */}
+                        <div className="flex flex-wrap gap-3 mt-4">
+                            {segments.map((seg, idx) => {
+                                const val = seg.value !== undefined ? seg.value : seg.items.length;
+                                if (val === 0) return null;
+                                return (
+                                    <button
+                                        key={idx}
+                                        onClick={() => setSelectedCategory({ title: `${title} - ${seg.label}`, items: seg.items })}
+                                        className="flex items-center text-sm text-slate-600 hover:text-slate-900 transition-colors bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 hover:border-slate-300 hover:bg-slate-100 shadow-sm"
+                                    >
+                                        <span className={`w-3 h-3 rounded-full ${seg.color} ml-2 shadow-sm`}></span>
+                                        {seg.label} ({val})
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div dir="rtl" className="min-h-screen bg-slate-50 text-slate-900 font-ibm pb-12">
+                    {/* رأس الصفحة */}
+                    <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+                        <div className="max-w-7xl mx-auto px-4 py-3 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                            <div className="flex items-center gap-4">
+                                <a href="index.html" className="bg-slate-100 p-2 rounded-lg hover:bg-slate-200 transition-colors text-slate-600" title="العودة للرئيسية">
+                                    <Home className="w-5 h-5" />
+                                </a>
+                                <div className="flex items-center gap-3 border-r pr-4 border-slate-200">
+                                    <div className="bg-indigo-600 p-2 rounded-lg">
+                                        <Github className="w-6 h-6 text-white" />
+                                    </div>
+                                    <div>
+                                        <h1 className="text-xl font-bold text-slate-800">إحصائيات مشاريع المجتمع</h1>
+                                        <p className="text-xs text-slate-500 font-medium">الفترة: 30 يناير 2026 - 30 مارس 2026</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                                <div className="relative w-full sm:w-64">
+                                    <Settings className="w-4 h-4 absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                                    <input
+                                        type="password"
+                                        placeholder="GitHub API Key (اختياري)"
+                                        value={apiKey}
+                                        onChange={(e) => setApiKey(e.target.value)}
+                                        className="w-full pl-3 pr-9 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-left bg-slate-50"
+                                        dir="ltr"
+                                    />
+                                </div>
+                                <button
+                                    onClick={fetchData}
+                                    disabled={loading}
+                                    className="w-full sm:w-auto flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-xl text-sm font-semibold transition-all shadow-md hover:shadow-lg active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
+                                >
+                                    {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'تحديث البيانات'}
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+
+                        {/* التنبيهات وحالة التحميل */}
+                        {progress && (
+                            <div className="mb-6 bg-indigo-50 text-indigo-700 p-4 rounded-xl flex items-center gap-3 border border-indigo-100 shadow-sm animate-pulse">
+                                <RefreshCw className="w-5 h-5 animate-spin" />
+                                <span className="font-bold">{progress}</span>
+                            </div>
+                        )}
+
+                        {rateLimitHit && (
+                            <div className="mb-6 bg-rose-50 text-rose-700 p-5 rounded-xl flex items-start gap-4 border border-rose-200 shadow-sm">
+                                <AlertCircle className="w-6 h-6 shrink-0 text-rose-500" />
+                                <div>
+                                    <h4 className="font-bold text-lg leading-none mb-2">تم الوصول للحد الأقصى لطلبات GitHub</h4>
+                                    <p className="text-sm opacity-90">يسمح GitHub بـ 60 طلباً في الساعة للزوار. يرجى إضافة <b>Personal Access Token</b> في الخانة العلوية لإكمال التحليل.</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {data.length === 0 && !loading && !progress && (
+                            <div className="text-center py-24 bg-white rounded-2xl border border-dashed border-slate-300 shadow-inner">
+                                <div className="bg-slate-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+                                    <Github className="w-12 h-12 text-slate-300" />
+                                </div>
+                                <h2 className="text-2xl font-bold text-slate-700 mb-2">استعراض إحصائيات المبادرة</h2>
+                                <p className="text-slate-500 max-w-lg mx-auto mb-8">
+                                    انقر على زر "تحديث البيانات" لسحب كافة طلبات السحب والقضايا للفترة المحددة من {REPOS.length} مستودعاً.
+                                </p>
+                                <button
+                                    onClick={fetchData}
+                                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg hover:shadow-indigo-200"
+                                >
+                                    بدء جلب البيانات
+                                </button>
+                            </div>
+                        )}
+
+                        {data.length > 0 && (
+                            <div className="mb-6 bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-4">
+                                <div className="flex items-center gap-2 text-slate-700">
+                                    <Settings className="w-5 h-5 text-slate-400" />
+                                    <label htmlFor="projectFilter" className="font-bold text-sm">تصفية حسب المشروع:</label>
+                                </div>
+                                <select
+                                    id="projectFilter"
+                                    value={selectedProjectFilter}
+                                    onChange={(e) => setSelectedProjectFilter(e.target.value)}
+                                    className="w-full md:w-auto flex-1 p-2.5 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50 hover:bg-white transition-colors cursor-pointer"
+                                >
+                                    <option value="all">جميع المشاريع ({REPOS.length})</option>
+                                    {REPOS.map((repo, idx) => (
+                                        <option key={idx} value={repo.name}>{repo.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
+                        {data.length > 0 && (
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+                                {/* الأعمدة البيانية */}
+                                <div className="lg:col-span-7 space-y-6">
+                                    <BarChart title="توزيع القضايا (Issues)" segments={stats.issues_status} />
+                                    <BarChart title="إجمالي النقاط حسب حالة المهمة" segments={stats.issues_points_status} unit="نقطة" />
+                                    <BarChart title="النقاط المحصلة حسب كل مشروع" segments={stats.project_points} unit="نقطة" />
+                                    <BarChart title="طلبات السحب (Pull Requests)" segments={stats.prs_status} />
+                                    <BarChart title="مساهمات المجتمع (PRs Ownership)" segments={stats.prs_ownership} />
+                                    <BarChart title="تحليل المهام المغلقة" segments={stats.closed_issues} />
+                                    <BarChart title="تفاعل المالك مع القضايا" segments={stats.issues_comments} />
+                                </div>
+
+                                {/* تفاصيل القسم المختار */}
+                                <div className="lg:col-span-5">
+                                    <div className="bg-white rounded-2xl border border-slate-200 shadow-lg sticky top-24 overflow-hidden flex flex-col max-h-[calc(100vh-8rem)]">
+                                        <div className="bg-slate-800 text-white p-5">
+                                            <div className="flex justify-between items-start">
+                                                <h3 className="font-bold text-lg leading-tight">
+                                                    {selectedCategory ? selectedCategory.title : 'تفاصيل العناصر'}
+                                                </h3>
+                                                {selectedCategory && (
+                                                    <span className="bg-indigo-500/30 text-indigo-100 text-xs px-2 py-1 rounded-md font-bold">
+                                                        {selectedCategory.items.length}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {!selectedCategory && (
+                                                <p className="text-slate-400 text-sm mt-2">اختر أحد الأشرطة لمشاهدة التفاصيل</p>
+                                            )}
+                                        </div>
+
+                                        <div className="p-0 overflow-y-auto flex-1">
+                                            {!selectedCategory && (
+                                                <div className="p-16 text-center text-slate-400 flex flex-col items-center">
+                                                    <div className="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mb-6">
+                                                        <User className="w-10 h-10 opacity-20" />
+                                                    </div>
+                                                    <p className="text-sm font-medium">انقر على أي شريط ملون لعرض قائمة القضايا أو طلبات السحب المتعلقة بها هنا.</p>
+                                                </div>
+                                            )}
+
+                                            {selectedCategory && selectedCategory.items.length === 0 && (
+                                                <div className="p-12 text-center text-slate-500 font-medium italic">لا توجد عناصر في هذا التصنيف حالياً.</div>
+                                            )}
+
+                                            {selectedCategory && selectedCategory.items.length > 0 && (
+                                                <ul className="divide-y divide-slate-100">
+                                                    {selectedCategory.items.map(item => (
+                                                        <li key={item.id} className="p-5 hover:bg-slate-50 transition-colors group">
+                                                            <div className="flex justify-between items-start mb-3">
+                                                                <a
+                                                                    href={item.html_url}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="font-bold text-slate-900 group-hover:text-indigo-600 text-sm flex items-start gap-2 leading-relaxed transition-colors"
+                                                                >
+                                                                    <ExternalLink className="w-4 h-4 mt-0.5 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity" />
+                                                                    {item.title}
+                                                                </a>
+                                                                <span className="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded-md whitespace-nowrap mr-3 border border-slate-200">
+                                                                    #{item.number}
+                                                                </span>
+                                                            </div>
+
+                                                            <div className="flex items-center gap-2 mb-4">
+                                                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-100 px-2 py-1 rounded">
+                                                                    {item.repo_info.name}
+                                                                </span>
+                                                                {item.points > 0 && (
+                                                                    <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-1 rounded border border-amber-200">
+                                                                        {item.points} نقطة
+                                                                    </span>
+                                                                )}
+                                                            </div>
+
+                                                            <div className="flex flex-wrap items-center justify-between text-xs gap-y-3 pt-4 border-t border-slate-100">
+                                                                {/* المُسند إليه */}
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-slate-400 font-medium">التكليف:</span>
+                                                                    {item.assignees.length > 0 ? (
+                                                                        <div className="flex -space-x-2 space-x-reverse">
+                                                                            {item.assignees.map(user => (
+                                                                                <img key={user.id} src={user.avatar_url} title={user.login} alt={user.login} className="w-7 h-7 rounded-full border-2 border-white shadow-sm" />
+                                                                            ))}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <span className="text-slate-300 italic">غير محدد</span>
+                                                                    )}
+                                                                </div>
+
+                                                                {/* التعليقات */}
+                                                                {(!item.pull_request || (item.pull_request && item.state === 'open')) && (
+                                                                    <div className="flex items-center gap-4">
+                                                                        <div className="flex items-center gap-1.5" title="رد مالك المشروع">
+                                                                            <span className="text-slate-400">المالك:</span>
+                                                                            {item.comment_details?.owner_replied ?
+                                                                                <CheckCircle2 className="w-4 h-4 text-emerald-500" /> :
+                                                                                <XCircle className="w-4 h-4 text-slate-200" />}
+                                                                        </div>
+                                                                        <div className="flex items-center gap-1.5" title="رد أشخاص آخرين">
+                                                                            <span className="text-slate-400">آخرون:</span>
+                                                                            {item.comment_details?.others_replied ?
+                                                                                <CheckCircle2 className="w-4 h-4 text-emerald-500" /> :
+                                                                                <XCircle className="w-4 h-4 text-slate-200" />}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
