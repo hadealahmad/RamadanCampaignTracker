@@ -159,6 +159,16 @@
       "icon": "⏰",
       "category": "personal",
       "order": 14
+    },
+    {
+      "id": "quran-apps-directory",
+      "owner": "Itqan-community",
+      "repo": "quran-apps-directory",
+      "name": "دليل التطبيقات القرآنية",
+      "publisher": "إتقان",
+      "icon": "📚",
+      "category": "platform",
+      "order": 15
     }
   ],
   "settings": {
