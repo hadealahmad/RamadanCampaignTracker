@@ -31,10 +31,10 @@
       "order": 2
     },
     {
-      "id": "mushaf-imad-rn",
+      "id": "mushaf-imad-expo",
       "owner": "adelpro",
-      "repo": "mushaf-imad-rn",
-      "name": "حزمة مصحف عماد - React Native",
+      "repo": "mushaf-imad-expo",
+      "name": "حزمة مصحف عماد - React Native/Expo",
       "publisher": "عادل بن يحي",
       "icon": "📱",
       "category": "mushaf",
@@ -58,6 +58,16 @@
       "publisher": "إتقان",
       "icon": "📱",
       "category": "mushaf",
+      "order": 5
+    },
+    {
+      "id": "quran-apps-directory",
+      "owner": "Itqan-community",
+      "repo": "quran-apps-directory",
+      "name": "دليل التطبيقات القرآنية",
+      "publisher": "إتقان",
+      "icon": "📚",
+      "category": "tools",
       "order": 5
     },
     {

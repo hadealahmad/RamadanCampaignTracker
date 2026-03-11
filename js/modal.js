@@ -77,15 +77,20 @@ function renderModalContent(issue, comments, isLoading) {
     ? `<span class="badge badge-points">${issue.points} نقطة</span>`
     : '';
 
-  const assignee = issue.assignee
+  const assigneesList = issue.assignees && issue.assignees.length > 0 ? issue.assignees : (issue.assignee ? [issue.assignee] : []);
+  const assignee = assigneesList.length > 0
     ? `
-      <div class="flex items-center gap-2 text-sm text-muted-foreground">
-        <i data-lucide="user" class="w-4 h-4"></i>
+      <div class="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
+        <i data-lucide="users" class="w-4 h-4"></i>
         <span>مسندة إلى:</span>
-        <div class="avatar">
-          <img src="${issue.assignee.avatar_url}" alt="${issue.assignee.login}">
-        </div>
-        <a href="${issue.assignee.html_url}" target="_blank" class="text-primary hover:underline">${issue.assignee.login}</a>
+        ${assigneesList.map(a => `
+          <div class="flex items-center gap-1 mr-2">
+            <div class="avatar">
+              <img src="${a.avatar_url}" alt="${a.login}">
+            </div>
+            <a href="${a.html_url}" target="_blank" class="text-primary hover:underline mr-1">${a.login}</a>
+          </div>
+        `).join('')}
       </div>
     `
     : '';

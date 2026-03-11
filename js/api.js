@@ -50,19 +50,36 @@ export async function loadConfig() {
  */
 export async function fetchProjectIssues(owner, repo, perPage = 100) {
     try {
-        const url = `${GITHUB_API_BASE}/repos/${owner}/${repo}/issues?state=all&per_page=${perPage}`;
-        const response = await fetch(url, { headers: getHeaders() });
+        let allIssues = [];
+        let page = 1;
+        let hasMore = true;
+        
+        while (hasMore && page <= 10) {
+            const url = `${GITHUB_API_BASE}/repos/${owner}/${repo}/issues?state=all&per_page=${perPage}&page=${page}`;
+            const response = await fetch(url, { headers: getHeaders() });
 
-        if (!response.ok) {
-            if (response.status === 403 || response.status === 429) {
-                console.warn(`Rate limited when fetching ${owner}/${repo}. Add a GitHub token in js/config.js to increase limits.`);
-            } else {
-                console.warn(`Failed to fetch issues for ${owner}/${repo}: ${response.status}`);
+            if (!response.ok) {
+                if (response.status === 403 || response.status === 429) {
+                    console.warn(`Rate limited when fetching ${owner}/${repo}. Add a GitHub token in js/config.js to increase limits.`);
+                } else {
+                    console.warn(`Failed to fetch issues for ${owner}/${repo}: ${response.status}`);
+                }
+                break;
             }
-            return [];
-        }
 
-        return await response.json();
+            const data = await response.json();
+            if (data.length === 0) {
+                hasMore = false;
+            } else {
+                allIssues = allIssues.concat(data);
+                if (data.length < perPage) {
+                    hasMore = false;
+                }
+            }
+            page++;
+        }
+        
+        return allIssues;
     } catch (error) {
         console.error(`Error fetching issues for ${owner}/${repo}:`, error);
         return [];
@@ -106,24 +123,33 @@ export async function fetchIssueComments(owner, repo, issueNumber) {
 export function parsePointsFromLabels(labels) {
     if (!labels || !labels.length) return 0;
 
-    const pointLabel = labels.find(l => {
-        // Match: "100", "100 points", "100pts", "100 poins"
-        if (/^(\d+)[\s:-]*(points?|poins|pts)?$/i.test(l.name)) return true;
+    let points = 0;
 
-        // Match: "pts-100", "points-100", "points:100", "pts 100"
-        if (/^(pts|points?|poins)[\s:-]*(\d+)$/i.test(l.name)) return true;
+    labels.forEach(l => {
+        const name = l.name.trim();
+        
+        // Exact numeric label (e.g., "100")
+        if (/^\d+$/.test(name)) {
+            points += parseInt(name, 10);
+            return;
+        }
 
-        return false;
+        // Number followed by point indicator (e.g., "Level 1: 100 points", "100 pts")
+        let match = name.match(/(\d+)[\s:-]*(points?|poins|pts)\b/i);
+        if (match) {
+            points += parseInt(match[1], 10);
+            return;
+        }
+
+        // Point indicator followed by number (e.g., "Points: 100", "pts-100")
+        match = name.match(/\b(points?|poins|pts)[\s:-]*(\d+)/i);
+        if (match) {
+            points += parseInt(match[2], 10);
+            return;
+        }
     });
 
-    if (!pointLabel) return 0;
-
-    const match = pointLabel.name.match(/\d+/);
-    if (match) {
-        return parseInt(match[0], 10);
-    }
-
-    return 0;
+    return points;
 }
 
 /**
@@ -165,29 +191,45 @@ export async function fetchAllProjectsData(projects, settings) {
         const processedIssues = processIssues(issuesResponse, thresholdDate);
         const issuesOnly = processedIssues.filter(i => !i.isPR);
 
-        // Fetch PRs using Pulls API to get merged_at info
-        const pullsUrl = `${GITHUB_API_BASE}/repos/${project.owner}/${project.repo}/pulls?state=all&per_page=${settings.perPage}`;
+        // Fetch PRs using Pulls API to get merged_at info. Paginate to get all.
         let prsOnly = [];
-        try {
-            const prsResponse = await fetch(pullsUrl, { headers: getHeaders() });
-            if (prsResponse.ok) {
+        let prPage = 1;
+        let hasMorePrs = true;
+        
+        while(hasMorePrs && prPage <= 10) {
+            const pullsUrl = `${GITHUB_API_BASE}/repos/${project.owner}/${project.repo}/pulls?state=all&per_page=${settings.perPage}&page=${prPage}`;
+            try {
+                const prsResponse = await fetch(pullsUrl, { headers: getHeaders() });
+                if (!prsResponse.ok) break;
+                
                 const prsRaw = await prsResponse.json();
-                prsOnly = prsRaw.filter(pr => {
-                    if (pr.state === 'closed') {
-                        const closedDate = new Date(pr.closed_at);
-                        return closedDate >= thresholdDate;
+                if (prsRaw.length === 0) {
+                    hasMorePrs = false;
+                } else {
+                    const filtered = prsRaw.filter(pr => {
+                        if (pr.state === 'closed') {
+                            const closedDate = new Date(pr.closed_at);
+                            return closedDate >= thresholdDate;
+                        }
+                        return true;
+                    });
+                    prsOnly = prsOnly.concat(filtered);
+                    
+                    if (prsRaw.length < settings.perPage) {
+                        hasMorePrs = false;
                     }
-                    return true;
-                });
+                }
+                prPage++;
+            } catch (error) {
+                console.error(`Error fetching PRs for ${project.owner}/${project.repo}:`, error);
+                break;
             }
-        } catch (error) {
-            console.error(`Error fetching PRs for ${project.owner}/${project.repo}:`, error);
         }
 
         // Calculate project stats for issues
         const openCount = issuesOnly.filter(i => i.state === 'open').length;
         const closedCount = issuesOnly.filter(i => i.state === 'closed').length;
-        const assignedCount = issuesOnly.filter(i => i.assignee).length;
+        const assignedCount = issuesOnly.filter(i => (i.assignees && i.assignees.length > 0) || !!i.assignee).length;
         const totalPoints = issuesOnly.reduce((sum, i) => sum + i.points, 0);
         const commentsCount = issuesOnly.reduce((sum, i) => sum + i.comments, 0);
 

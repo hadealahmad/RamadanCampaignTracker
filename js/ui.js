@@ -169,9 +169,13 @@ export function renderIssueCard(issue, owner, repo) {
     ? `<span class="badge badge-points">${issue.points}</span>`
     : '';
 
-  const assigneeName = issue.assignee
-    ? `<span class="assignee-name truncate max-w-[80px]">${issue.assignee.login}</span>`
-    : '';
+  const assigneesList = issue.assignees && issue.assignees.length > 0 ? issue.assignees : (issue.assignee ? [issue.assignee] : []);
+  const assigneesHtml = assigneesList.map(a => `
+    <div class="flex items-center gap-1" title="${a.login}">
+      <div class="avatar"><img src="${a.avatar_url}" alt="${a.login}"></div>
+      <span class="assignee-name truncate max-w-[80px]">${a.login}</span>
+    </div>
+  `).join('');
 
   const labels = (issue.labels || [])
     .filter(l => !l.name.match(/^\d+/))
@@ -182,10 +186,6 @@ export function renderIssueCard(issue, owner, repo) {
   const githubLink = `<a href="${issue.html_url}" target="_blank" rel="noopener" class="text-muted-foreground hover:text-primary transition-colors ml-auto mr-2" title="فتح في GitHub">
     <i data-lucide="external-link" class="w-3 h-3"></i>
   </a>`;
-
-  const assignee = issue.assignee
-    ? `<div class="avatar"><img src="${issue.assignee.avatar_url}" alt="${issue.assignee.login}"></div>`
-    : '';
 
   const date = new Date(issue.created_at).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' });
 
@@ -205,9 +205,8 @@ export function renderIssueCard(issue, owner, repo) {
           ${labels}
         </div>
         <div class="issue-meta">
-          <div class="flex items-center gap-1">
-            ${assignee}
-            ${assigneeName}
+          <div class="flex items-center gap-2">
+            ${assigneesHtml}
           </div>
           <span class="issue-meta-item">
             <i data-lucide="message-circle" class="w-3 h-3"></i>
@@ -560,7 +559,7 @@ export function showDayActivity(date, type, items, onIssueClick) {
         const issue = item.issue;
         const isPR = issue.pull_request || (issue.html_url && issue.html_url.includes('/pull/'));
         const author = issue.user;
-        const assignee = issue.assignee;
+        const assigneesList = issue.assignees && issue.assignees.length > 0 ? issue.assignees : (issue.assignee ? [issue.assignee] : []);
 
         const statusClass = issue.state === 'open' ? 'open' : 'closed';
         const dateLabel = new Date(issue.created_at).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' });
@@ -585,13 +584,13 @@ export function showDayActivity(date, type, items, onIssueClick) {
                           </div>
                         ` : ''}
                         
-                        ${assignee ? `
+                        ${assigneesList.length > 0 ? assigneesList.map(a => `
                           <div class="flex items-center gap-1" title="المسند إليه">
                             <i data-lucide="arrow-left" class="w-2 h-2 text-muted-foreground"></i>
-                            <div class="avatar"><img src="${assignee.avatar_url}" alt="${assignee.login}"></div>
-                            <span class="text-[10px] text-muted-foreground">${assignee.login}</span>
+                            <div class="avatar"><img src="${a.avatar_url}" alt="${a.login}"></div>
+                            <span class="text-[10px] text-muted-foreground">${a.login}</span>
                           </div>
-                        ` : ''}
+                        `).join('') : ''}
                       </div>
                       
                       <div class="flex items-center gap-2 text-[10px] text-muted-foreground">

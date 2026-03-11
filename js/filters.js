@@ -21,8 +21,9 @@ export function filterIssues(issues, filters) {
             if (filters.status === 'closed' && issue.state !== 'closed') return false;
         }
         if (filters.assignment !== 'all') {
-            if (filters.assignment === 'assigned' && !issue.assignee) return false;
-            if (filters.assignment === 'unassigned' && issue.assignee) return false;
+            const hasAssignee = (issue.assignees && issue.assignees.length > 0) || !!issue.assignee;
+            if (filters.assignment === 'assigned' && !hasAssignee) return false;
+            if (filters.assignment === 'unassigned' && hasAssignee) return false;
         }
         if (filters.comments !== 'all') {
             if (filters.comments === 'has-comments' && issue.comments === 0) return false;
@@ -39,7 +40,7 @@ export function applyFilters(projects, filters) {
         const filteredStats = {
             open: filteredIssues.filter(i => i.state === 'open').length,
             closed: filteredIssues.filter(i => i.state === 'closed').length,
-            assigned: filteredIssues.filter(i => i.assignee).length,
+            assigned: filteredIssues.filter(i => (i.assignees && i.assignees.length > 0) || !!i.assignee).length,
             total: filteredIssues.length,
             points: filteredIssues.reduce((sum, i) => sum + i.points, 0),
             comments: filteredIssues.reduce((sum, i) => sum + i.comments, 0)
@@ -86,7 +87,7 @@ export function calculateGlobalStats(projects, thresholdDate) {
 
     const openIssues = allIssues.filter(i => i.state === 'open');
     const issuesWithComments = allIssues.filter(i => i.comments > 0);
-    const issuesWithAssignees = allIssues.filter(i => i.assignee);
+    const issuesWithAssignees = allIssues.filter(i => (i.assignees && i.assignees.length > 0) || !!i.assignee);
     const closedSinceThreshold = allIssues.filter(i => {
         if (i.state !== 'closed' || !i.closed_at) return false;
         return new Date(i.closed_at) >= new Date(thresholdDate);
@@ -127,46 +128,50 @@ export function buildContributorLeaderboard(projects, thresholdDate, sortBy = 'p
     projects.forEach(project => {
         project.issues.forEach(issue => {
             // Track assignees for assigned issues
-            if (issue.assignee) {
-                const username = issue.assignee.login;
-                if (!contributors.has(username)) {
-                    contributors.set(username, {
-                        username,
-                        avatar_url: issue.assignee.avatar_url,
-                        html_url: issue.assignee.html_url,
-                        assignedIssues: [],
-                        closedIssuesWithPoints: [],
-                        totalPoints: 0,
-                        closedCount: 0,
-                        assignedCount: 0
-                    });
-                }
-
-                const contributor = contributors.get(username);
-                contributor.assignedIssues.push({
-                    ...issue,
-                    projectName: project.name,
-                    owner: project.owner,
-                    repo: project.repo
-                });
-                contributor.assignedCount++;
-
-                // If this issue is closed after threshold and has points, count it
-                if (issue.state === 'closed' && issue.closed_at) {
-                    const closedDate = new Date(issue.closed_at);
-                    if (closedDate >= new Date(thresholdDate)) {
-                        if (issue.points > 0) {
-                            contributor.closedIssuesWithPoints.push({
-                                ...issue,
-                                projectName: project.name,
-                                owner: project.owner,
-                                repo: project.repo
-                            });
-                            contributor.totalPoints += issue.points;
-                        }
-                        contributor.closedCount++;
+            const assignees = issue.assignees && issue.assignees.length > 0 ? issue.assignees : (issue.assignee ? [issue.assignee] : []);
+            
+            if (assignees.length > 0) {
+                assignees.forEach(assignee => {
+                    const username = assignee.login;
+                    if (!contributors.has(username)) {
+                        contributors.set(username, {
+                            username,
+                            avatar_url: assignee.avatar_url,
+                            html_url: assignee.html_url,
+                            assignedIssues: [],
+                            closedIssuesWithPoints: [],
+                            totalPoints: 0,
+                            closedCount: 0,
+                            assignedCount: 0
+                        });
                     }
-                }
+
+                    const contributor = contributors.get(username);
+                    contributor.assignedIssues.push({
+                        ...issue,
+                        projectName: project.name,
+                        owner: project.owner,
+                        repo: project.repo
+                    });
+                    contributor.assignedCount++;
+
+                    // If this issue is closed after threshold and has points, count it
+                    if (issue.state === 'closed' && issue.closed_at) {
+                        const closedDate = new Date(issue.closed_at);
+                        if (closedDate >= new Date(thresholdDate)) {
+                            if (issue.points > 0) {
+                                contributor.closedIssuesWithPoints.push({
+                                    ...issue,
+                                    projectName: project.name,
+                                    owner: project.owner,
+                                    repo: project.repo
+                                });
+                                contributor.totalPoints += issue.points;
+                            }
+                            contributor.closedCount++;
+                        }
+                    }
+                });
             }
         });
     });
